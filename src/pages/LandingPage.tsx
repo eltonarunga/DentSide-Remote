@@ -49,8 +49,9 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
   return (
     <div className="bg-surface font-body text-on-surface selection:bg-primary-container selection:text-on-primary-container">
       {/* ── Nav ── */}
-      <nav className="fixed top-0 left-0 right-0 h-20 z-50 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30 px-8 flex items-center justify-between">
-        <BrandMark size={32} />
+      <nav className="fixed top-0 left-0 right-0 h-20 z-50 border-b border-outline-variant/30 bg-surface/80 backdrop-blur-xl">
+        <div className="page-shell page-padding flex h-20 items-center justify-between">
+          <BrandMark size={32} />
 
         <div className="hidden md:flex items-center gap-10">
           {NAV_LINKS.map((l) => (
@@ -78,10 +79,11 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
             Get Started
           </button>
         </div>
+        </div>
       </nav>
 
       {/* ── Hero ── */}
-      <section className="pt-48 pb-32 px-8 max-w-7xl mx-auto flex flex-col items-center text-center">
+      <section className="page-shell page-padding pt-36 md:pt-44 pb-20 md:pb-28 flex flex-col items-center text-center">
         <div className="inline-flex items-center gap-2 bg-primary-container/10 border border-primary/10 rounded-full px-6 py-2 mb-12 shadow-sm">
           <span className="material-symbols-outlined text-primary text-sm">verified</span>
           <span className="text-xs font-bold text-primary uppercase tracking-widest">
@@ -131,7 +133,7 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
       </div>
 
       {/* ── Features ── */}
-      <section id="features" className="py-48 px-8 max-w-7xl mx-auto">
+      <section id="features" className="page-shell page-padding py-24 md:py-36">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
           <div>
             <span className="text-primary font-bold tracking-widest text-xs uppercase mb-6 block">
@@ -177,8 +179,8 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
       </section>
 
       {/* ── Pricing ── */}
-      <section id="pricing" className="bg-inverse-surface py-48 px-8">
-        <div className="max-w-7xl mx-auto text-center mb-24">
+      <section id="pricing" className="bg-inverse-surface py-24 md:py-36 page-padding">
+        <div className="page-shell text-center mb-16 md:mb-24">
           <span className="text-primary-fixed-dim font-bold tracking-widest text-xs uppercase mb-6 block">
             Membership
           </span>
@@ -187,7 +189,7 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
           </h2>
         </div>
 
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div className="page-shell max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
           {/* Free */}
           <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 flex flex-col text-white">
             <span className="text-xs font-bold text-white/40 uppercase tracking-widest mb-6">

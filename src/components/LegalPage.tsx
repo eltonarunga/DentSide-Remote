@@ -23,7 +23,8 @@ export default function LegalPage({
 }) {
   return (
     <div className="min-h-screen bg-surface font-body text-on-surface selection:bg-primary-container selection:text-on-primary-container">
-      <header className="fixed top-0 left-0 right-0 h-20 z-50 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30 px-8 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 h-20 z-50 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30">
+        <div className="page-shell page-padding flex h-20 items-center justify-between">
         <BrandMark size={32} />
         <Link
           to="/"
@@ -32,9 +33,10 @@ export default function LegalPage({
           <span className="material-symbols-outlined text-sm">arrow_back</span>
           Back to home
         </Link>
+      </div>
       </header>
 
-      <main className="pt-32 pb-24 px-8 max-w-5xl mx-auto">
+      <main className="page-shell page-padding pt-28 md:pt-32 pb-16 md:pb-24">
         <div className="bg-surface-container-lowest rounded-[2.5rem] editorial-shadow border border-outline-variant/10 overflow-hidden">
           <div className="border-b border-outline-variant/10 p-10 md:p-14">
             <span className="text-primary font-bold tracking-widest text-xs uppercase mb-4 block">Legal Documentation</span>

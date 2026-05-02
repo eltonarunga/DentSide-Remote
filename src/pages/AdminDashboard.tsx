@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import AdminLayout from '../components/AdminLayout';
 import {
@@ -264,7 +263,7 @@ export default function AdminDashboard() {
       ) : (
         <div className="space-y-12">
           {/* Bento Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <AdminStatCard
               icon="verified_user"
               label="Verification Queue"
@@ -296,7 +295,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Infrastructure & Queue Status */}
-          <div className="grid grid-cols-12 gap-6">
+          <div className="grid grid-cols-12 gap-8">
             <div className="col-span-12 lg:col-span-8 bg-surface-container-lowest rounded-xl p-8 shadow-[0px_12px_32px_rgba(25,28,30,0.04)]">
               <div className="flex items-center justify-between mb-8">
                 <div>
@@ -413,12 +412,12 @@ export default function AdminDashboard() {
           {/* Verification Review Section */}
           <AdminSection id="verifications" title="Credential Review" subtitle="Inspect licensure documentation and issue clinical certifications.">
             {verifications.length === 0 ? <EmptyAdminState message="No pending credentials for review." /> : (
-              <div className="grid gap-6">
+              <div className="grid gap-8">
                 {verifications.map((verification) => {
                   const isSaving = actionState?.userId === verification.id;
                   return (
-                    <div key={verification.id} className="bg-surface-container-lowest p-6 rounded-xl border border-transparent hover:border-primary/20 transition-all shadow-sm">
-                      <div className="flex flex-col lg:flex-row justify-between gap-6">
+                    <div key={verification.id} className="bg-surface-container-lowest p-8 rounded-xl border border-transparent hover:border-primary/20 transition-all shadow-sm">
+                      <div className="flex flex-col lg:flex-row justify-between gap-8">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-4">
                             <h4 className="font-bold text-on-surface">{verification.legalName}</h4>
@@ -438,14 +437,14 @@ export default function AdminDashboard() {
                               <p className="text-xs font-bold text-on-surface">{formatDate(verification.submittedAt)}</p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3 p-3 bg-surface-container-low rounded-lg border border-surface-variant/20 mb-4">
+                          <div className="flex items-center gap-3 p-4 bg-surface-container-low rounded-lg border border-surface-variant/20 mb-4">
                             <span className="material-symbols-outlined text-primary">description</span>
                             <span className="text-[11px] font-bold text-on-surface truncate">{verification.documentName}</span>
                             <button className="text-[10px] font-bold text-primary ml-auto hover:underline uppercase tracking-widest">View PDF</button>
                           </div>
                         </div>
 
-                        <div className="lg:w-80 flex flex-col gap-3">
+                        <div className="lg:w-80 flex flex-col gap-4">
                           <textarea
                             className="w-full bg-surface-container-low border-none rounded-lg text-xs font-medium focus:ring-2 focus:ring-primary/20 p-3 resize-none outline-none"
                             rows={3}
@@ -457,14 +456,14 @@ export default function AdminDashboard() {
                             <button
                               onClick={() => handleVerificationDecision(verification.id, 'approved')}
                               disabled={isSaving}
-                              className="flex-1 py-2 bg-primary text-on-primary text-[10px] font-bold rounded-lg uppercase tracking-widest hover:opacity-90"
+                              className="flex-1 py-3 bg-primary text-on-primary text-[10px] font-bold rounded-lg uppercase tracking-widest hover:opacity-90"
                             >
                               {isSaving && actionState?.status === 'approved' ? <Loader2 size={12} className="animate-spin mx-auto" /> : 'Approve'}
                             </button>
                             <button
                               onClick={() => handleVerificationDecision(verification.id, 'rejected')}
                               disabled={isSaving}
-                              className="flex-1 py-2 bg-error text-on-error text-[10px] font-bold rounded-lg uppercase tracking-widest hover:opacity-90"
+                              className="flex-1 py-3 bg-error text-on-error text-[10px] font-bold rounded-lg uppercase tracking-widest hover:opacity-90"
                             >
                               {isSaving && actionState?.status === 'rejected' ? <Loader2 size={12} className="animate-spin mx-auto" /> : 'Reject'}
                             </button>
@@ -555,7 +554,7 @@ function AdminSection({ id, title, subtitle, children }: { id: string; title: st
           <p className="text-on-surface-variant font-medium mt-1">{subtitle}</p>
         </div>
       </div>
-      <div className="bg-surface-container-low/50 rounded-2xl p-4 sm:p-8">
+      <div className="bg-surface-container-low/50 rounded-2xl p-8">
         {children}
       </div>
     </section>
@@ -571,7 +570,7 @@ function AdminStatCard({ icon, label, value, detail, color }: { icon: string; la
   };
 
   return (
-    <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-transparent hover:border-primary/10 transition-all">
+    <div className="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-transparent hover:border-primary/10 transition-all">
       <div className="flex items-center gap-3 mb-4">
         <div className={`p-2 rounded-lg ${colorMap[color] || colorMap.primary}`}>
           <span className="material-symbols-outlined text-sm">{icon}</span>

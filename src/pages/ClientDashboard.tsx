@@ -25,7 +25,7 @@ export default function ClientDashboard() {
       </section>
 
       {/* Bento Grid Main Content */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-12 gap-8">
         {/* Network Access Card */}
         <div className="col-span-12 lg:col-span-8 bg-surface-container-lowest rounded-xl p-8 shadow-[0px_12px_32px_rgba(25,28,30,0.04)] relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary-container/5 rounded-full -mr-20 -mt-20 group-hover:scale-110 transition-transform duration-700"></div>
@@ -120,7 +120,7 @@ export default function ClientDashboard() {
             <span className="material-symbols-outlined text-primary">monitoring</span>
           </div>
           <div className="bg-surface-container-low rounded-xl p-4 space-y-4">
-            <div className="bg-surface-container-lowest p-5 rounded-xl editorial-shadow border border-transparent">
+            <div className="bg-surface-container-lowest p-8 rounded-xl editorial-shadow border border-transparent">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <span className="material-symbols-outlined text-primary">security</span>
@@ -135,7 +135,7 @@ export default function ClientDashboard() {
               </p>
             </div>
 
-            <div className="p-5 rounded-xl border border-outline-variant/30 bg-surface-container-lowest/50">
+            <div className="p-8 rounded-xl border border-outline-variant/30 bg-surface-container-lowest/50">
               <h4 className="font-bold text-on-surface text-sm mb-3">Partner Status</h4>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">

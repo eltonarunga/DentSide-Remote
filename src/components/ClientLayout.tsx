@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import BrandMark from './BrandMark';
 import NotificationMenu from './NotificationMenu';
 import SiteFooter from './SiteFooter';
 
@@ -150,7 +149,7 @@ export default function ClientLayout({
         </header>
 
         {/* Main */}
-        <main className="flex-1 p-4 md:p-8 lg:p-12">
+        <main className="flex-1 p-8 lg:p-12">
           <div className="max-w-[1440px] mx-auto">
             {children}
           </div>

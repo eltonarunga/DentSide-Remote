@@ -81,25 +81,25 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
       </nav>
 
       {/* ── Hero ── */}
-      <section className="pt-40 pb-24 px-8 max-w-7xl mx-auto flex flex-col items-center text-center">
-        <div className="inline-flex items-center gap-2 bg-primary-container/10 border border-primary/10 rounded-full px-4 py-1.5 mb-10 shadow-sm">
+      <section className="pt-48 pb-32 px-8 max-w-7xl mx-auto flex flex-col items-center text-center">
+        <div className="inline-flex items-center gap-2 bg-primary-container/10 border border-primary/10 rounded-full px-6 py-2 mb-12 shadow-sm">
           <span className="material-symbols-outlined text-primary text-sm">verified</span>
           <span className="text-xs font-bold text-primary uppercase tracking-widest">
             The Premier Remote Dental Network
           </span>
         </div>
 
-        <h1 className="font-headline text-5xl md:text-7xl font-black text-on-surface tracking-tighter leading-[1.1] mb-8">
+        <h1 className="font-headline text-5xl md:text-7xl lg:text-8xl font-black text-on-surface tracking-tighter leading-[1.05] mb-10">
           The future of <br />
           <span className="text-primary italic">clinical work.</span>
         </h1>
 
-        <p className="text-lg md:text-xl text-on-surface-variant font-medium max-w-2xl mb-12 leading-relaxed">
+        <p className="text-lg md:text-xl text-on-surface-variant font-medium max-w-3xl mb-16 leading-relaxed">
           Stop juggling platforms. DentSide Remote connects elite dental professionals with
           high-value teledentistry, insurance review, and clinical consulting roles — all in one precision hub.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-6">
           <button
             onClick={onGetStarted}
             className="bg-primary text-on-primary px-10 py-5 rounded-2xl font-black text-lg tracking-wide uppercase shadow-xl shadow-primary/30 active:scale-95 transition-all flex items-center gap-3"
@@ -131,31 +131,31 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
       </div>
 
       {/* ── Features ── */}
-      <section id="features" className="py-32 px-8 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+      <section id="features" className="py-48 px-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
           <div>
-            <span className="text-primary font-bold tracking-widest text-xs uppercase mb-4 block">
+            <span className="text-primary font-bold tracking-widest text-xs uppercase mb-6 block">
               Precision Platform
             </span>
-            <h2 className="font-headline text-5xl font-extrabold text-on-surface tracking-tight mb-8">
+            <h2 className="font-headline text-5xl md:text-6xl font-extrabold text-on-surface tracking-tight mb-10">
               Every opportunity,<br />one unified login.
             </h2>
-            <p className="text-lg text-on-surface-variant font-medium leading-relaxed mb-10">
+            <p className="text-lg md:text-xl text-on-surface-variant font-medium leading-relaxed mb-12">
               Built by clinicians, for clinicians. We've eliminated the friction of remote dental work,
               providing a single dashboard for credentials, earnings, and gig management.
             </p>
             <button
               onClick={onGetStarted}
-              className="text-primary font-black flex items-center gap-2 group"
+              className="text-primary font-black flex items-center gap-3 group text-lg"
             >
               Learn about our verification process
-              <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
+              <span className="material-symbols-outlined transition-transform group-hover:translate-x-2">
                 arrow_forward
               </span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {FEATURES.map((f) => (
               <div
                 key={f.title}
@@ -177,17 +177,17 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
       </section>
 
       {/* ── Pricing ── */}
-      <section id="pricing" className="bg-inverse-surface py-32 px-8">
-        <div className="max-w-7xl mx-auto text-center mb-20">
-          <span className="text-primary-fixed-dim font-bold tracking-widest text-xs uppercase mb-4 block">
+      <section id="pricing" className="bg-inverse-surface py-48 px-8">
+        <div className="max-w-7xl mx-auto text-center mb-24">
+          <span className="text-primary-fixed-dim font-bold tracking-widest text-xs uppercase mb-6 block">
             Membership
           </span>
-          <h2 className="font-headline text-5xl font-extrabold text-white tracking-tight">
+          <h2 className="font-headline text-5xl md:text-6xl font-extrabold text-white tracking-tight">
             Start free. Scale when ready.
           </h2>
         </div>
 
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
           {/* Free */}
           <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 flex flex-col text-white">
             <span className="text-xs font-bold text-white/40 uppercase tracking-widest mb-6">

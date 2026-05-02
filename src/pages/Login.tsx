@@ -261,7 +261,7 @@ export default function Login() {
       </div>
 
       {/* Right side - Form */}
-      <div className="flex-1 flex items-center justify-center px-5 py-10 sm:px-8 bg-gradient-to-b from-white to-surface-container-low">
+      <div className="flex-1 flex items-center justify-center px-5 py-10 sm:px-8 bg-surface">
         <div className="w-full max-w-md lg:max-w-lg">
           <div className="mb-10 text-center md:text-left">
             <BrandMark size={32} className="md:hidden mb-12 flex justify-center" />

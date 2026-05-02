@@ -6,12 +6,8 @@ import {
   type WithdrawalProvider,
   type WithdrawalRecord,
 } from '../lib/api';
-import { Link, useLocation } from 'react-router-dom';
-import {
-  Wallet as WalletIcon,
-  CreditCard, Smartphone, Plus, ShieldCheck as ShieldIcon,
-  Clock, Receipt, RefreshCcw, ArrowRight, Lock, BadgeCheck, HelpCircle, Loader2, Menu
-} from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import DentistSidebar from '../components/DentistSidebar';
 import NotificationMenu from '../components/NotificationMenu';
 
@@ -106,13 +102,12 @@ export default function Wallet() {
   };
 
   return (
-    <div className="ds-layout">
+    <div className="bg-surface text-on-background min-h-screen font-body">
       {isSidebarOpen && (
         <button
           type="button"
-          className="ds-sidebar-backdrop md:hidden"
+          className="fixed inset-0 bg-on-surface/40 z-40 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
-          aria-label="Close navigation"
         />
       )}
 
@@ -122,297 +117,278 @@ export default function Wallet() {
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      {/* Top Bar */}
-      <header className="ds-topbar">
-        <div className="flex items-center gap-3">
+      {/* Top Navigation Bar */}
+      <nav className="fixed top-0 right-0 left-0 md:left-64 h-20 z-40 bg-slate-50/80 backdrop-blur-xl flex items-center justify-between px-8 shadow-[0px_12px_32px_rgba(25,28,30,0.04)]">
+        <div className="flex items-center gap-4">
           <button
             type="button"
-            className="ds-sidebar-toggle"
+            className="md:hidden p-2 text-slate-500"
             onClick={() => setIsSidebarOpen(true)}
-            aria-label="Open navigation"
           >
-            <Menu size={16} />
+            <span className="material-symbols-outlined">menu</span>
           </button>
-          <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>Wallet & Earnings</p>
+          <div className="text-xl font-bold tracking-tighter text-primary font-headline">DentSide Finance</div>
         </div>
-        <div className="flex items-center gap-3">
-          <NotificationMenu />
-          <div className="ds-avatar ds-avatar-md">
-            <img src={profile?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.displayName || 'D'}`} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+
+        <div className="flex items-center gap-6">
+          <button
+            className="bg-primary text-white px-6 py-2 rounded-xl font-bold tracking-wide scale-95 active:scale-100 transition-transform shadow-lg shadow-primary/20 hidden sm:block"
+            onClick={() => setIsWithdrawFormOpen(true)}
+          >
+            Withdraw Funds
+          </button>
+          <div className="flex items-center gap-4 text-slate-500">
+            <NotificationMenu />
+            <span className="material-symbols-outlined cursor-pointer hover:bg-slate-100/50 p-2 rounded-full transition-all">settings</span>
+            <img
+              alt="Profile"
+              className="w-10 h-10 rounded-full border-2 border-primary/10"
+              src={profile?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.displayName || 'D'}`}
+            />
           </div>
         </div>
-      </header>
+      </nav>
 
-      {/* Main */}
-      <main className="ds-main">
-        <div className="ds-page-header">
-          <p className="ds-page-eyebrow">Finance</p>
-          <h1 className="ds-page-title">Wallet & Earnings</h1>
-          <p className="ds-page-subtitle">Manage your clinical earnings, track pending settlements, and choose your preferred withdrawal method.</p>
+      <main className="md:ml-64 pt-24 p-4 md:p-12 space-y-10">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+          <div>
+            <h1 className="text-4xl font-extrabold tracking-tight text-on-surface mb-2 font-headline">Financial Overview</h1>
+            <p className="text-slate-500 font-body max-w-md">Track your clinical earnings, manage payouts, and analyze your remote practice's performance.</p>
+          </div>
+          {!isWithdrawFormOpen && (
+            <button
+              onClick={() => setIsWithdrawFormOpen(true)}
+              className="px-8 py-4 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold uppercase tracking-wider shadow-[0px_12px_32px_rgba(0,93,144,0.2)] hover:scale-[1.02] transition-all"
+            >
+              Withdraw Funds
+            </button>
+          )}
         </div>
 
-        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
-          {/* Left Column */}
-          <div className="flex flex-col gap-5">
-            {/* Balance Hero */}
-            <div className="ds-card ds-card-teal" style={{ padding: 32, position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <div className="mb-7 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="ds-stat-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Available Balance</p>
-                    <p className="ds-stat-value text-[40px] sm:text-[52px]" style={{ color: '#fff' }}>
-                      {formatMoney(walletSummary?.availableBalance || 0)}
-                    </p>
-                  </div>
-                  <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: 10 }}>
-                    <WalletIcon size={24} color="#fff" />
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    style={{ background: '#fff', color: 'var(--color-teal-dark)', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 700, fontSize: 12, letterSpacing: '0.04em', cursor: 'pointer', textTransform: 'uppercase' }}
-                    onClick={() => setIsWithdrawFormOpen((open) => !open)}
-                  >
-                    Withdraw Now
-                  </button>
-                  <button style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '10px 20px', fontWeight: 700, fontSize: 12, letterSpacing: '0.04em', cursor: 'pointer', textTransform: 'uppercase' }}>
-                    Add Funds
-                  </button>
-                </div>
+        {/* Bento Grid Stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Balance Card */}
+          <div className="lg:col-span-2 bg-surface-container-lowest rounded-xl p-8 shadow-[0px_12px_32px_rgba(25,28,30,0.04)] flex flex-col justify-between overflow-hidden relative group min-h-[240px]">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
+            <div className="relative z-10">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 block">Available Balance</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-5xl font-extrabold text-on-surface tracking-tighter font-headline">
+                  {formatMoney(walletSummary?.availableBalance || 0)}
+                </span>
+                <span className="text-primary font-bold text-sm">Active practice</span>
               </div>
-              <WalletIcon size={160} color="rgba(255,255,255,0.06)" style={{ position: 'absolute', right: -20, bottom: -24 }} />
+            </div>
+            <div className="relative z-10 mt-12 grid grid-cols-2 gap-4">
+              <div className="p-4 bg-surface-container-low rounded-lg">
+                <p className="text-xs text-slate-500 mb-1">Lifetime Earnings</p>
+                <p className="text-xl font-bold text-on-surface font-headline">{formatMoney(walletSummary?.lifetimeWithdrawn || 0)}</p>
+              </div>
+              <div className="p-4 bg-surface-container-low rounded-lg">
+                <p className="text-xs text-slate-500 mb-1">Pending Settlements</p>
+                <p className="text-xl font-bold text-on-surface font-headline">{formatMoney(walletSummary?.pendingBalance || 0)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Monthly Progress / Target Card */}
+          <div className="bg-surface-container-lowest rounded-xl p-8 shadow-[0px_12px_32px_rgba(25,28,30,0.04)] flex flex-col items-center justify-center text-center space-y-4">
+            <div className="relative w-32 h-32 flex items-center justify-center">
+              <svg className="w-full h-full -rotate-90">
+                <circle className="text-surface-container-high" cx="64" cy="64" fill="transparent" r="58" stroke="currentColor" strokeWidth="8"></circle>
+                <circle
+                  className="text-primary transition-all duration-1000"
+                  cx="64" cy="64" fill="transparent" r="58" stroke="currentColor"
+                  strokeDasharray="364.4"
+                  strokeDashoffset={364.4 * (1 - 0.75)}
+                  strokeLinecap="round" strokeWidth="10"
+                ></circle>
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-2xl font-extrabold text-on-surface font-headline">75%</span>
+                <span className="text-[10px] text-slate-500 uppercase font-bold">Goal</span>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-on-surface font-headline">Monthly Target</h3>
+              <p className="text-sm text-slate-500">Practice Growth Track</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Withdrawal Form if open */}
+        {isWithdrawFormOpen && (
+          <div className="bg-surface-container-lowest rounded-xl p-8 shadow-[0px_12px_32px_rgba(25,28,30,0.06)] border-2 border-primary/10">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <h2 className="text-xl font-bold text-on-surface font-headline">Request Withdrawal</h2>
+                <p className="text-sm text-slate-500">Funds will be transferred to your selected payout channel.</p>
+              </div>
+              <button onClick={() => setIsWithdrawFormOpen(false)} className="material-symbols-outlined text-outline hover:text-on-surface transition-colors">close</button>
             </div>
 
-            {isWithdrawFormOpen ? (
-              <div className="ds-card" style={{ padding: 24 }}>
-                <div className="mb-5 flex items-start justify-between gap-4">
-                  <div>
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-ink)', marginBottom: 4 }}>
-                      Request Withdrawal
-                    </h3>
-                    <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>
-                      Submit a payout request through the new withdrawal endpoint.
-                    </p>
-                  </div>
-                  <span className="ds-badge ds-badge-teal">API Connected</span>
-                </div>
-
-                <div className="ds-grid-2">
-                  <div className="ds-form-group">
-                    <label className="ds-label">Amount</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-bold text-outline uppercase tracking-wider mb-2">Amount ({currency})</label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-4 text-slate-400 font-bold">$</span>
                     <input
                       type="number"
-                      min="0"
-                      step="0.01"
-                      className="ds-input"
+                      className="w-full bg-surface-container-low border-none rounded-xl py-4 pl-8 pr-4 text-lg font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                      placeholder="0.00"
                       value={withdrawalAmount}
-                      onChange={(event) => setWithdrawalAmount(event.target.value)}
-                      placeholder="250.00"
+                      onChange={(e) => setWithdrawalAmount(e.target.value)}
                     />
                   </div>
-                  <div className="ds-form-group">
-                    <label className="ds-label">Provider</label>
-                    <select
-                      className="ds-select"
-                      value={withdrawalProvider}
-                      onChange={(event) => setWithdrawalProvider(event.target.value as WithdrawalProvider)}
-                    >
-                      <option value="stripe">Stripe</option>
-                      <option value="mpesa">M-Pesa</option>
-                    </select>
-                  </div>
                 </div>
-
-                <div className="ds-form-group" style={{ marginBottom: 0 }}>
-                  <label className="ds-label">Destination Label</label>
+                <div>
+                  <label className="block text-[10px] font-bold text-outline uppercase tracking-wider mb-2">Payout Channel</label>
+                  <select
+                    className="w-full bg-surface-container-low border-none rounded-xl py-4 px-4 font-bold focus:ring-2 focus:ring-primary/20 outline-none appearance-none"
+                    value={withdrawalProvider}
+                    onChange={(e) => setWithdrawalProvider(e.target.value as WithdrawalProvider)}
+                  >
+                    <option value="stripe">Stripe Connect</option>
+                    <option value="mpesa">M-Pesa Mobile</option>
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-bold text-outline uppercase tracking-wider mb-2">Destination Account Label</label>
                   <input
                     type="text"
-                    className="ds-input"
+                    className="w-full bg-surface-container-low border-none rounded-xl py-4 px-4 font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                    placeholder="e.g. My Business Checking"
                     value={destinationLabel}
-                    onChange={(event) => setDestinationLabel(event.target.value)}
-                    placeholder={withdrawalProvider === 'mpesa' ? 'Safaricom 07xx xxx xxx' : 'Main business checking'}
+                    onChange={(e) => setDestinationLabel(e.target.value)}
                   />
                 </div>
-
-                <div className="mt-5 flex flex-wrap items-center gap-3">
+                <div className="pt-6">
                   <button
-                    type="button"
-                    className="ds-btn ds-btn-primary"
                     onClick={handleWithdrawalSubmit}
                     disabled={isSubmitting}
+                    className="w-full py-4 bg-primary text-white rounded-xl font-bold uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2"
                   >
-                    {isSubmitting ? <Loader2 size={14} className="spin" /> : <WalletIcon size={14} />}
-                    Submit Request
-                  </button>
-                  <button
-                    type="button"
-                    className="ds-btn ds-btn-ghost"
-                    onClick={() => setIsWithdrawFormOpen(false)}
-                    disabled={isSubmitting}
-                  >
-                    Cancel
+                    {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <span className="material-symbols-outlined">send</span>}
+                    Confirm Payout
                   </button>
                 </div>
               </div>
-            ) : null}
-
-            {/* Sub-stats */}
-            <div className="ds-grid-2">
-              <StatCard
-                icon={<Clock size={16} color="var(--color-amber)" />}
-                label="Pending Settlements"
-                value={formatMoney(walletSummary?.pendingBalance || 0)}
-                sub="Payments currently in clearing from completed consultations."
-              />
-              <StatCard
-                icon={<RefreshCcw size={16} color="var(--color-teal)" />}
-                label="Automated Payout"
-                value={
-                  walletSummary?.payoutsConfigured.stripe || walletSummary?.payoutsConfigured.mpesa
-                    ? 'Configured'
-                    : 'Needs Setup'
-                }
-                sub="Server-side payout channels are now tracked through the withdrawal API."
-              />
             </div>
+            {error && <p className="mt-4 text-error text-sm font-bold flex items-center gap-2"><span className="material-symbols-outlined text-sm">error</span> {error}</p>}
+            {statusMessage && <p className="mt-4 text-primary text-sm font-bold flex items-center gap-2"><span className="material-symbols-outlined text-sm">check_circle</span> {statusMessage}</p>}
+          </div>
+        )}
 
-            {/* Transaction History */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-ink)' }}>Recent Activity</h3>
-                <Link to="/wallet" style={{ fontSize: 13, color: 'var(--color-teal)', fontWeight: 600, textDecoration: 'none' }}>View Full Ledger</Link>
-              </div>
-              {isLoading ? (
-                <div className="ds-card" style={{ padding: 48, textAlign: 'center' }}>
-                  <RefreshCcw size={18} className="spin" color="var(--color-teal)" style={{ margin: '0 auto 12px' }} />
-                  <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>Loading wallet activity…</p>
-                </div>
-              ) : withdrawals.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {withdrawals.slice(0, 5).map((record) => (
-                    <div key={record.id} className="ds-card" style={{ padding: 20 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
-                        <div>
-                          <p style={{ fontWeight: 600, color: 'var(--color-ink)', marginBottom: 4 }}>
-                            {record.provider === 'mpesa' ? 'M-Pesa' : 'Stripe'} withdrawal
-                          </p>
-                          <p style={{ fontSize: 12, color: 'var(--color-ink-4)' }}>
-                            {new Date(record.createdAt).toLocaleString()} · {record.status.replace(/_/g, ' ')}
-                          </p>
-                        </div>
-                        <span className="ds-badge ds-badge-teal">{formatMoney(record.amount)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="ds-card" style={{ padding: 48, textAlign: 'center' }}>
-                  <Receipt size={36} color="var(--color-fog-3)" style={{ margin: '0 auto 12px' }} />
-                  <h4 style={{ fontWeight: 600, color: 'var(--color-ink)', marginBottom: 6 }}>No Transactions Yet</h4>
-                  <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>Your recent earnings and withdrawals will appear here.</p>
-                </div>
-              )}
-              {error && (
-                <p style={{ marginTop: 12, fontSize: 13, color: 'var(--color-ruby)' }}>{error}</p>
-              )}
-              {statusMessage && (
-                <p style={{ marginTop: 12, fontSize: 13, color: 'var(--color-sage)' }}>{statusMessage}</p>
-              )}
+        {/* Transaction History Section */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-on-surface font-headline">Gig History & Payouts</h2>
+            <div className="flex items-center space-x-3">
+              <button className="flex items-center space-x-2 px-4 py-2 bg-surface-container text-on-surface-variant text-sm font-semibold rounded-lg hover:bg-surface-container-high transition-colors">
+                <span className="material-symbols-outlined text-sm">filter_list</span>
+                <span>Filter</span>
+              </button>
+              <button className="flex items-center space-x-2 px-4 py-2 bg-surface-container text-on-surface-variant text-sm font-semibold rounded-lg hover:bg-surface-container-high transition-colors">
+                <span className="material-symbols-outlined text-sm">download</span>
+                <span>Export Ledger</span>
+              </button>
             </div>
           </div>
 
-          {/* Right Column */}
-          <div className="flex flex-col gap-5">
-            {/* Payout Channels */}
-            <div className="ds-card" style={{ padding: 24 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-ink)', marginBottom: 20 }}>Payout Channels</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <PayoutMethod
-                  icon={<CreditCard size={18} color="#fff" />}
-                  iconBg="#635BFF"
-                  label="Stripe Connect"
-                  sub="Direct bank transfer. Global."
-                  active={Boolean(walletSummary?.payoutsConfigured.stripe)}
-                />
-                <PayoutMethod
-                  icon={<Smartphone size={18} color="#fff" />}
-                  iconBg="#4CAF50"
-                  label="M-Pesa Mobile"
-                  sub="Instant mobile wallet. East Africa."
-                  active={Boolean(walletSummary?.payoutsConfigured.mpesa)}
-                />
-              </div>
-              <button className="ds-btn ds-btn-ghost ds-btn-sm" style={{ marginTop: 16, width: '100%', justifyContent: 'center', gap: 6 }}>
-                <Plus size={14} /> Link New Account
-              </button>
+          <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0px_12px_32px_rgba(25,28,30,0.04)]">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[600px]">
+                <thead>
+                  <tr className="bg-surface-container-low text-[10px] uppercase tracking-widest text-slate-500 font-bold">
+                    <th className="px-8 py-5">Transaction Details</th>
+                    <th className="px-8 py-5">Date</th>
+                    <th className="px-8 py-5 text-right">Amount</th>
+                    <th className="px-8 py-5 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/10">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={4} className="px-8 py-20 text-center">
+                        <div className="flex flex-col items-center gap-4">
+                          <Loader2 className="animate-spin text-primary" size={32} />
+                          <p className="text-slate-500 font-medium">Loading transaction ledger...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : withdrawals.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-8 py-20 text-center">
+                        <span className="material-symbols-outlined text-4xl text-slate-200 mb-4">receipt_long</span>
+                        <p className="text-slate-500 font-medium">No payout history found.</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    withdrawals.map((record) => (
+                      <tr key={record.id} className="group hover:bg-surface-container-low transition-colors">
+                        <td className="px-8 py-6">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 rounded-lg bg-primary-container/10 flex items-center justify-center text-primary">
+                              <span className="material-symbols-outlined">
+                                {record.provider === 'mpesa' ? 'smartphone' : 'credit_card'}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-bold text-on-surface">Payout to {record.destinationLabel}</p>
+                              <p className="text-xs text-slate-500">{record.provider === 'mpesa' ? 'M-Pesa Mobile' : 'Stripe Transfer'}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6">
+                          <p className="text-sm text-slate-600">{new Date(record.createdAt).toLocaleDateString()}</p>
+                          <p className="text-[10px] text-slate-400 uppercase font-bold">{new Date(record.createdAt).toLocaleTimeString()}</p>
+                        </td>
+                        <td className="px-8 py-6 text-right font-bold text-on-surface font-headline">
+                          {formatMoney(record.amount)}
+                        </td>
+                        <td className="px-8 py-6 text-right">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+                            record.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {record.status.replace(/_/g, ' ')}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
-
-            {/* Security */}
-            <div className="ds-card ds-card-dark" style={{ padding: 24 }}>
-              <ShieldIcon size={28} color="var(--color-teal-mid)" style={{ marginBottom: 14 }} />
-              <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-white)', marginBottom: 8 }}>Enterprise Security</h3>
-              <p style={{ fontSize: 13, color: 'var(--color-fog-4)', lineHeight: 1.6, marginBottom: 16 }}>
-                AES-256 encryption & PCI-DSS compliance on every gig settlement.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[{ icon: <Lock size={13} />, label: 'Encrypted Vault Access' }, { icon: <BadgeCheck size={13} />, label: 'Multi-Factor Auth Required' }].map(({ icon, label }) => (
-                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--color-fog-3)', fontWeight: 500 }}>
-                    {icon} {label}
-                  </div>
-                ))}
+            {!isLoading && withdrawals.length > 0 && (
+              <div className="p-6 bg-surface-container-low/50 flex justify-center">
+                <button className="text-sm font-bold text-primary hover:underline">View All Activity</button>
               </div>
-            </div>
-
-            {/* Help */}
-            <div className="ds-card" style={{ padding: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <HelpCircle size={14} color="var(--color-ink-4)" />
-                <h4 style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-ink)' }}>Need assistance?</h4>
-              </div>
-              <p style={{ fontSize: 12, color: 'var(--color-ink-4)', marginBottom: 12, lineHeight: 1.55 }}>
-                Our financial compliance team is available 24/7 for dental practitioners.
-              </p>
-              <a href="mailto:support@dentsideremote.com" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--color-teal)', fontWeight: 600, textDecoration: 'none' }}>
-                Contact Support <ArrowRight size={12} />
-              </a>
-            </div>
+            )}
           </div>
         </div>
       </main>
-    </div>
-  );
-}
 
-function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub: string }) {
-  return (
-    <div className="ds-card" style={{ padding: 20 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        {icon}
-        <span style={{ fontSize: 12, color: 'var(--color-ink-4)', fontWeight: 500 }}>{label}</span>
+      {/* Mobile Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-surface/90 backdrop-blur-xl border-t border-outline-variant/10 z-50">
+        <div className="flex justify-around items-center h-16">
+          <a className="flex flex-col items-center space-y-1 text-slate-500" href="#">
+            <span className="material-symbols-outlined">work</span>
+            <span className="text-[10px] font-bold uppercase tracking-tighter">Gigs</span>
+          </a>
+          <a className="flex flex-col items-center space-y-1 text-primary" href="#">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance_wallet</span>
+            <span className="text-[10px] font-bold uppercase tracking-tighter">Wallet</span>
+          </a>
+          <a className="flex flex-col items-center space-y-1 text-slate-500" href="#">
+            <span className="material-symbols-outlined">person</span>
+            <span className="text-[10px] font-bold uppercase tracking-tighter">Profile</span>
+          </a>
+        </div>
       </div>
-      <p className="font-display" style={{ fontSize: 26, letterSpacing: '-0.03em', color: 'var(--color-ink)', marginBottom: 8 }}>{value}</p>
-      <p style={{ fontSize: 12, color: 'var(--color-ink-4)', lineHeight: 1.5 }}>{sub}</p>
-    </div>
-  );
-}
-
-function PayoutMethod({ icon, iconBg, label, sub, active }: { icon: React.ReactNode; iconBg: string; label: string; sub: string; active?: boolean }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
-      borderRadius: 10, border: `1px solid ${active ? 'var(--color-teal)' : 'var(--color-fog-2)'}`,
-      background: active ? 'var(--color-teal-light)' : 'var(--color-white)',
-      cursor: 'pointer', transition: 'border-color 0.15s',
-    }}>
-      <div style={{ width: 40, height: 40, borderRadius: 8, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        {icon}
-      </div>
-      <div style={{ flex: 1 }}>
-        <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-ink)', marginBottom: 2 }}>{label}</p>
-        <p style={{ fontSize: 12, color: 'var(--color-ink-4)' }}>{sub}</p>
-      </div>
-      {active && <ShieldIcon size={16} color="var(--color-teal)" />}
     </div>
   );
 }

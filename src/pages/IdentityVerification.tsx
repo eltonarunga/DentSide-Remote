@@ -11,19 +11,7 @@ import {
   uploadProtectedFile,
 } from '../lib/storage-client';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  Menu,
-  ArrowLeft,
-  Upload,
-  Clock,
-  BadgeCheck,
-  HelpCircle,
-  Lock,
-  CheckCircle2,
-  CircleAlert,
-  Loader2,
-  FileUp,
-} from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import DentistSidebar from '../components/DentistSidebar';
 import NotificationMenu from '../components/NotificationMenu';
 
@@ -47,12 +35,6 @@ type UploadedDocument = {
 
 const STATE_OPTIONS = ['California', 'New York', 'Texas', 'Florida', 'Washington', 'Kenya'];
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-
-const STEPS = [
-  { num: 1, label: 'Personal Information', sub: 'Basic contact & dental residency details.', active: true },
-  { num: 2, label: 'License Verification', sub: 'Official state licensure documentation.', active: true },
-  { num: 3, label: 'Verification Status', sub: 'Review and final confirmation.', active: false },
-];
 
 export default function IdentityVerification() {
   const { profile, refreshProfile } = useAuth();
@@ -79,24 +61,10 @@ export default function IdentityVerification() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const checks = useMemo(() => {
-    const personalComplete =
-      form.legalName.trim().length > 2 &&
-      form.email.includes('@') &&
-      form.clinic.trim().length > 2;
-    const licenseComplete = form.licenseNumber.trim().length >= 6 && !!form.documentName.trim();
-    const finalReviewComplete = form.hasSelfieCheck && form.hasDisclosureConsent;
-    const completedCount =
-      Number(personalComplete) + Number(licenseComplete) + Number(finalReviewComplete);
-
-    return {
-      personalComplete,
-      licenseComplete,
-      finalReviewComplete,
-      completedCount,
-      progress: Math.round((completedCount / 3) * 100),
-    };
-  }, [form]);
+  const profileStrength = useMemo(() => {
+    const points = [profile?.displayName, profile?.email, profile?.photoURL].filter(Boolean).length;
+    return Math.round((points / 3) * 100);
+  }, [profile]);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,9 +75,7 @@ export default function IdentityVerification() {
       try {
         const response = await apiRequest<VerificationStatusResponse>('/api/verify/status');
 
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
 
         setVerification(response.verification);
         setStorageConfigured(response.storageConfigured);
@@ -126,36 +92,22 @@ export default function IdentityVerification() {
           hasDisclosureConsent: current.hasDisclosureConsent || Boolean(response.verification),
         }));
       } catch (loadError) {
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
 
         if (loadError instanceof ApiError && loadError.status === 404) {
           setStorageConfigured(runtimeStorageConfigured);
-          setForm((current) => ({
-            ...current,
-            legalName: profile?.displayName || current.legalName,
-            email: profile?.email || current.email,
-          }));
         } else {
-          const message =
-            loadError instanceof Error
-              ? loadError.message
-              : 'Unable to load your verification status right now.';
+          const message = loadError instanceof Error ? loadError.message : 'Unable to load verification status.';
           setError(message);
         }
       } finally {
-        if (!cancelled) {
-          setIsLoadingStatus(false);
-        }
+        if (!cancelled) setIsLoadingStatus(false);
       }
     };
 
     loadVerificationStatus();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [profile?.displayName, profile?.email]);
 
   const handleChange = (key: keyof FormState, value: string | boolean) => {
@@ -175,17 +127,13 @@ export default function IdentityVerification() {
     }
 
     const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-    const hasAllowedExtension = /\.(pdf|png|jpe?g)$/i.test(file.name);
-
-    if ((!file.type || !validTypes.includes(file.type)) && !hasAllowedExtension) {
+    if (!validTypes.includes(file.type)) {
       setError('Upload a PDF, JPG, or PNG verification document.');
-      event.target.value = '';
       return;
     }
 
     if (file.size > MAX_UPLOAD_BYTES) {
       setError('Verification documents must be 10 MB or smaller.');
-      event.target.value = '';
       return;
     }
 
@@ -193,22 +141,27 @@ export default function IdentityVerification() {
     setForm((current) => ({ ...current, documentName: file.name }));
   };
 
-  const resolveUploadedDocument = async (): Promise<UploadedDocument> => {
-    if (selectedFile) {
-      if (storageConfigured) {
-        if (!profile?.uid) {
-          throw new Error(
-            'Secure storage is not ready. Confirm your provider settings and try again.',
-          );
-        }
+  const handleSubmit = async () => {
+    setError('');
+    setSuccess('');
 
-        const path = `verification-documents/${profile.uid}/${Date.now()}-${sanitizeFileName(selectedFile.name)}`;
-        const uploaded = await uploadProtectedFile({
-          path,
-          file: selectedFile,
-        });
+    if (!form.legalName || !form.clinic || !form.licenseNumber) {
+      setError('Please complete all required fields.');
+      return;
+    }
+    if (!form.hasSelfieCheck || !form.hasDisclosureConsent) {
+      setError('Please provide consent before submitting.');
+      return;
+    }
 
-        return {
+    setIsSubmitting(true);
+
+    try {
+      let uploadedDocument: UploadedDocument = { name: form.documentName };
+      if (selectedFile && storageConfigured && profile?.uid) {
+        const path = `verification-documents/${profile.uid}/${Date.now()}-${selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
+        const uploaded = await uploadProtectedFile({ path, file: selectedFile });
+        uploadedDocument = {
           name: selectedFile.name,
           path: uploaded.path,
           contentType: uploaded.contentType,
@@ -216,55 +169,10 @@ export default function IdentityVerification() {
         };
       }
 
-      return {
-        name: selectedFile.name,
-        contentType: selectedFile.type || undefined,
-        sizeBytes: selectedFile.size,
-      };
-    }
-
-    return {
-      name: verification?.documentName || form.documentName,
-      path: verification?.documentPath,
-      contentType: verification?.documentContentType,
-      sizeBytes: verification?.documentSizeBytes,
-    };
-  };
-
-  const handleSubmit = async () => {
-    setError('');
-    setSuccess('');
-
-    if (!checks.personalComplete) {
-      setError('Please complete all personal information fields with valid values.');
-      return;
-    }
-    if (!checks.licenseComplete) {
-      setError('Please provide a valid license number and upload a license document.');
-      return;
-    }
-    if (!checks.finalReviewComplete) {
-      setError('Please confirm the identity and consent checkboxes before submitting.');
-      return;
-    }
-    if (storageConfigured && !selectedFile && !verification?.documentPath) {
-      setError('Please upload your verification document before submitting.');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const uploadedDocument = await resolveUploadedDocument();
-      const response = await apiRequest<{
-        verification: VerificationRecord;
-        storageConfigured: boolean;
-        message?: string;
-      }>('/api/verify', {
+      const response = await apiRequest<{ verification: VerificationRecord; storageConfigured: boolean; message?: string }>('/api/verify', {
         method: 'POST',
         body: JSON.stringify({
           ...form,
-          documentName: uploadedDocument.name,
           documentPath: uploadedDocument.path,
           documentContentType: uploadedDocument.contentType,
           documentSizeBytes: uploadedDocument.sizeBytes,
@@ -272,19 +180,11 @@ export default function IdentityVerification() {
       });
 
       setVerification(response.verification);
-      setStorageConfigured(response.storageConfigured);
       setSelectedFile(null);
       await refreshProfile();
-
-      setSuccess(
-        response.message ||
-          'Verification submitted. Review typically completes within 24–48 business hours.',
-      );
+      setSuccess(response.message || 'Verification submitted for review.');
     } catch (submitError) {
-      const message =
-        submitError instanceof Error
-          ? submitError.message
-          : 'Unable to save verification details right now.';
+      const message = submitError instanceof Error ? submitError.message : 'Unable to save verification.';
       setError(message);
     } finally {
       setIsSubmitting(false);
@@ -292,13 +192,12 @@ export default function IdentityVerification() {
   };
 
   return (
-    <div className="ds-layout">
+    <div className="bg-surface text-on-surface antialiased min-h-screen font-body">
       {isSidebarOpen && (
         <button
           type="button"
-          className="ds-sidebar-backdrop md:hidden"
+          className="fixed inset-0 bg-on-surface/40 z-40 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
-          aria-label="Close navigation"
         />
       )}
 
@@ -308,428 +207,230 @@ export default function IdentityVerification() {
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      <header className="ds-topbar">
-        <div className="flex items-center gap-3">
+      {/* TopNavBar */}
+      <header className="fixed top-0 right-0 left-0 md:left-64 h-20 z-40 bg-[#f7f9fb]/80 backdrop-blur-xl flex items-center justify-between px-8 shadow-[0px_12px_32px_rgba(25,28,30,0.04)]">
+        <div className="flex items-center gap-4">
           <button
             type="button"
-            className="ds-sidebar-toggle"
+            className="md:hidden p-2 text-slate-600"
             onClick={() => setIsSidebarOpen(true)}
-            aria-label="Open navigation"
           >
-            <Menu size={16} />
+            <span className="material-symbols-outlined">menu</span>
           </button>
-          <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>
-            Identity Verification
-          </p>
+          <div className="text-xl font-bold tracking-tighter text-primary font-headline">DentSide Profile</div>
         </div>
-        <div className="flex items-center gap-3">
-          <NotificationMenu />
-          <div className="ds-avatar ds-avatar-md">
-            <img
-              src={
-                profile?.photoURL ||
-                `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.displayName || 'D'}`
-              }
-              alt="avatar"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
+            <NotificationMenu />
+            <button className="p-2 rounded-full hover:bg-slate-100/50 transition-all duration-200">
+              <span className="material-symbols-outlined text-slate-600">settings</span>
+            </button>
           </div>
+          <button className="hidden md:block bg-gradient-to-br from-primary to-primary-container text-on-primary px-6 py-2.5 rounded-xl font-semibold text-sm tracking-wide shadow-lg scale-95 active:scale-100 transition-transform uppercase">
+            Post Gig
+          </button>
         </div>
       </header>
 
-      <main className="ds-main">
-        <div className="ds-page-header">
-          <p className="ds-page-eyebrow">Verification</p>
-          <h1 className="ds-page-title">Identity Verification</h1>
-          <p className="ds-page-subtitle">
-            Upload your licensing document into secure storage and submit the full verification record for review.
-          </p>
-        </div>
-
-        <div className="grid items-start gap-7 xl:grid-cols-[260px_minmax(0,1fr)]">
-          <aside style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="ds-card" style={{ padding: 24 }}>
-              {STEPS.map((step, i) => (
-                <div key={step.num} style={{ display: 'flex', gap: 14 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: '50%',
-                        flexShrink: 0,
-                        background: step.active ? 'var(--color-teal)' : 'var(--color-fog)',
-                        color: step.active ? '#fff' : 'var(--color-fog-4)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 700,
-                        fontSize: 13,
-                      }}
-                    >
-                      {step.num}
-                    </div>
-                    {i < STEPS.length - 1 ? (
-                      <div
-                        style={{
-                          width: 1,
-                          flex: 1,
-                          minHeight: 32,
-                          background: step.active ? 'var(--color-teal-light)' : 'var(--color-fog-2)',
-                          margin: '6px 0',
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                  <div style={{ paddingBottom: i < STEPS.length - 1 ? 24 : 0 }}>
-                    <p
-                      style={{
-                        fontSize: 10,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        fontWeight: 600,
-                        color: step.active ? 'var(--color-teal)' : 'var(--color-fog-4)',
-                        marginBottom: 2,
-                      }}
-                    >
-                      Step {step.num}
-                    </p>
-                    <p
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: step.active ? 'var(--color-ink)' : 'var(--color-fog-4)',
-                        marginBottom: 2,
-                      }}
-                    >
-                      {step.label}
-                    </p>
-                    <p style={{ fontSize: 12, color: 'var(--color-ink-4)', lineHeight: 1.5 }}>
-                      {step.sub}
-                    </p>
-                  </div>
-                </div>
-              ))}
+      <main className="md:ml-64 pt-20 p-4 md:p-12 space-y-10">
+        {/* Hero Header Section */}
+        <section className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+          <div className="flex items-center gap-6">
+            <div className="w-24 h-24 rounded-2xl bg-surface-container-low flex items-center justify-center border-4 border-surface-container-lowest shadow-xl overflow-hidden shrink-0">
+              <img
+                alt="Profile"
+                className="w-full h-full object-cover"
+                src={profile?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.displayName || 'D'}`}
+              />
             </div>
-
-            <div className="ds-card" style={{ padding: 20, borderLeft: '3px solid var(--color-teal)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <Lock size={14} color="var(--color-teal)" />
-                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink)' }}>
-                  Storage Status
-                </p>
-              </div>
-              <p style={{ fontSize: 12, color: 'var(--color-ink-4)', lineHeight: 1.6 }}>
-                {storageConfigured
-                  ? 'Verification documents are being stored in your configured secure bucket.'
-                  : 'Secure file storage is not configured yet, so submissions will fall back to metadata-only tracking.'}
-              </p>
+            <div>
+              <h1 className="text-4xl font-extrabold tracking-tight text-on-surface font-headline leading-tight">
+                {profile?.displayName || 'Dr. Practitioner'}
+              </h1>
+              <p className="text-secondary font-medium">{profile?.experience || 'Dental Specialist'}</p>
             </div>
-          </aside>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="px-6 py-3 rounded-xl border border-outline/20 font-semibold text-sm hover:bg-surface-container-low transition-colors flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-sm">arrow_back</span> Back
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="px-6 py-3 rounded-xl bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold text-sm shadow-lg hover:shadow-xl transition-all uppercase tracking-widest flex items-center gap-2"
+            >
+              {isSubmitting ? <Loader2 className="animate-spin" size={16} /> : <span className="material-symbols-outlined text-sm">verified</span>}
+              Save Profile
+            </button>
+          </div>
+        </section>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div className="ds-card">
-              <div className="ds-card-header">
-                <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-ink)' }}>
-                  Personal Details
-                </h2>
-                <span className={`ds-badge ${
-                  verification?.status === 'approved'
-                    ? 'ds-badge-teal'
-                    : verification?.status === 'rejected'
-                      ? 'ds-badge-ruby'
-                      : 'ds-badge-amber'
-                }`}>
-                  {(verification?.status || 'in progress').replace(/_/g, ' ')}
-                </span>
+        {/* Bento Grid Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column */}
+          <div className="lg:col-span-2 space-y-8">
+            <div className="p-8 rounded-xl bg-surface-container-lowest shadow-sm space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold tracking-tight font-headline">Professional Details</h2>
+                <span className="material-symbols-outlined text-outline">history_edu</span>
               </div>
-              <div className="ds-card-body">
-                <div className="ds-grid-2">
-                  <div className="ds-form-group">
-                    <label className="ds-label">Legal Full Name</label>
-                    <input
-                      type="text"
-                      className="ds-input"
-                      value={form.legalName}
-                      onChange={(event) => handleChange('legalName', event.target.value)}
-                      placeholder="Dr. Julianne Mercer"
-                    />
-                  </div>
-                  <div className="ds-form-group">
-                    <label className="ds-label">Email Address</label>
-                    <input
-                      type="email"
-                      className="ds-input"
-                      value={form.email}
-                      onChange={(event) => handleChange('email', event.target.value)}
-                      placeholder="j.mercer@dental.com"
-                    />
-                  </div>
-                  <div className="ds-form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>
-                    <label className="ds-label">Current Clinic / Institution</label>
-                    <input
-                      type="text"
-                      className="ds-input"
-                      value={form.clinic}
-                      onChange={(event) => handleChange('clinic', event.target.value)}
-                      placeholder="St. Apollonia Dental Center"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="ds-grid-2">
-              <div className="ds-card" style={{ padding: 24 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-ink)', marginBottom: 20 }}>
-                  State Licensure
-                </h3>
-                <div className="ds-form-group">
-                  <label className="ds-label">Issuing State</label>
-                  <select
-                    className="ds-select"
-                    value={form.issuingState}
-                    onChange={(event) => handleChange('issuingState', event.target.value)}
-                  >
-                    {STATE_OPTIONS.map((state) => (
-                      <option key={state} value={state}>
-                        {state}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="ds-form-group" style={{ marginBottom: 0 }}>
-                  <label className="ds-label">License Number</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-outline uppercase tracking-wider">Legal Name</label>
                   <input
                     type="text"
-                    className="ds-input"
-                    value={form.licenseNumber}
-                    onChange={(event) => handleChange('licenseNumber', event.target.value)}
-                    placeholder="DDS-XXXXXX-2024"
+                    className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                    value={form.legalName}
+                    onChange={(e) => handleChange('legalName', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-outline uppercase tracking-wider">Clinical Institution</label>
+                  <input
+                    type="text"
+                    className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                    placeholder="e.g. City Dental Hub"
+                    value={form.clinic}
+                    onChange={(e) => handleChange('clinic', e.target.value)}
                   />
                 </div>
               </div>
-
-              <div
-                style={{
-                  border: '1.5px dashed var(--color-fog-2)',
-                  borderRadius: 12,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 32,
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  transition: 'border-color 0.15s, background 0.15s',
-                  background: 'var(--color-paper)',
-                }}
-                onMouseOver={(event) => {
-                  event.currentTarget.style.borderColor = 'var(--color-teal-mid)';
-                  event.currentTarget.style.background = 'var(--color-teal-light)';
-                }}
-                onMouseOut={(event) => {
-                  event.currentTarget.style.borderColor = 'var(--color-fog-2)';
-                  event.currentTarget.style.background = 'var(--color-paper)';
-                }}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <div className="ds-feature-icon" style={{ marginBottom: 12 }}>
-                  <Upload size={18} color="var(--color-teal)" />
-                </div>
-                <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-ink)', marginBottom: 6 }}>
-                  Upload License Document
-                </p>
-                <p style={{ fontSize: 12, color: 'var(--color-ink-4)', lineHeight: 1.55, marginBottom: 16 }}>
-                  PDF, JPG, or PNG up to 10 MB. When storage is configured, the file is uploaded directly to your secure storage provider before submission.
-                </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  style={{ display: 'none' }}
-                />
-                <button type="button" className="ds-btn ds-btn-ghost ds-btn-sm">
-                  {selectedFile?.name || form.documentName || 'Browse Files'}
-                </button>
-                {verification?.documentPath ? (
-                  <p style={{ fontSize: 11, color: 'var(--color-ink-4)', marginTop: 12 }}>
-                    Stored securely in bucket
-                  </p>
-                ) : null}
+              <div className="flex flex-wrap gap-2 pt-4">
+                {profile?.interests?.map(interest => (
+                  <span key={interest} className="px-4 py-1.5 rounded-full bg-tertiary-container/10 text-tertiary font-bold text-xs tracking-wider uppercase">
+                    {interest}
+                  </span>
+                ))}
               </div>
             </div>
 
-            <div className="ds-card" style={{ padding: 24 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-ink)', marginBottom: 16 }}>
-                Final Review
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+            <div className="p-8 rounded-xl bg-surface-container-lowest shadow-sm space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold tracking-tight font-headline">Verified Credentials</h2>
+                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                  verification?.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                }`}>
+                  {verification?.status || 'unverified'}
+                </span>
+              </div>
+              <div className="space-y-4">
+                <div className="flex flex-col md:flex-row gap-6">
+                  <div className="flex-1 space-y-2">
+                    <label className="text-[10px] font-bold text-outline uppercase tracking-wider">Issuing State</label>
+                    <select
+                      className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 font-medium outline-none focus:ring-2 focus:ring-primary/20 appearance-none"
+                      value={form.issuingState}
+                      onChange={(e) => handleChange('issuingState', e.target.value)}
+                    >
+                      {STATE_OPTIONS.map(state => <option key={state} value={state}>{state}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <label className="text-[10px] font-bold text-outline uppercase tracking-wider">License Number</label>
+                    <input
+                      type="text"
+                      className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 font-medium outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="DDS-XXXXX-2024"
+                      value={form.licenseNumber}
+                      onChange={(e) => handleChange('licenseNumber', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-outline-variant/30 rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-surface-container-low transition-all"
+                >
+                  <span className="material-symbols-outlined text-4xl text-primary mb-4">upload_file</span>
+                  <p className="font-bold text-on-surface mb-1">{selectedFile?.name || form.documentName || 'Upload License Documentation'}</p>
+                  <p className="text-xs text-on-surface-variant max-w-xs">PDF, JPG, or PNG up to 10 MB. Files are stored securely for verification review.</p>
+                  <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} accept=".pdf,.jpg,.jpeg,.png" />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8 rounded-xl bg-surface-container-lowest shadow-sm space-y-6">
+              <h2 className="text-xl font-bold tracking-tight font-headline">Review & Consent</h2>
+              <div className="space-y-4">
+                <label className="flex items-center gap-4 cursor-pointer group">
                   <input
                     type="checkbox"
+                    className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary"
                     checked={form.hasSelfieCheck}
-                    onChange={(event) => handleChange('hasSelfieCheck', event.target.checked)}
+                    onChange={(e) => handleChange('hasSelfieCheck', e.target.checked)}
                   />
-                  <span style={{ fontSize: 13, color: 'var(--color-ink)' }}>
-                    I confirm the uploaded license belongs to me and matches my legal name.
-                  </span>
+                  <span className="text-sm text-on-surface-variant group-hover:text-on-surface transition-colors">I confirm that all provided information is accurate and matches my legal documentation.</span>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+                <label className="flex items-center gap-4 cursor-pointer group">
                   <input
                     type="checkbox"
+                    className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary"
                     checked={form.hasDisclosureConsent}
-                    onChange={(event) => handleChange('hasDisclosureConsent', event.target.checked)}
+                    onChange={(e) => handleChange('hasDisclosureConsent', e.target.checked)}
                   />
-                  <span style={{ fontSize: 13, color: 'var(--color-ink)' }}>
-                    I consent to DentSide reviewing this information for verification and trust controls.
-                  </span>
+                  <span className="text-sm text-on-surface-variant group-hover:text-on-surface transition-colors">I consent to the processing of my credentials for professional identity verification.</span>
                 </label>
               </div>
             </div>
+          </div>
 
-            {isLoadingStatus ? (
-              <div className="ds-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Loader2 size={16} className="spin" color="var(--color-teal)" />
-                <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>
-                  Loading your latest verification status…
+          {/* Right Column */}
+          <div className="space-y-8">
+            <div className="p-8 rounded-xl bg-surface-container-lowest shadow-sm space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold tracking-tight font-headline">Profile Integrity</h2>
+                <span className="material-symbols-outlined text-primary">analytics</span>
+              </div>
+              <div className="relative pt-1">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-500 uppercase">Verification Progress</span>
+                  <span className="text-sm font-bold text-primary">{profileStrength}%</span>
+                </div>
+                <div className="overflow-hidden h-2 rounded-full bg-surface-container-high">
+                  <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${profileStrength}%` }}></div>
+                </div>
+              </div>
+              <div className="p-4 rounded-xl bg-primary-container/10 border border-primary/20">
+                <p className="text-xs text-primary font-bold mb-2 uppercase tracking-wider">Next Step</p>
+                <p className="text-sm text-on-primary-fixed-variant">
+                  {profileStrength < 100 ? 'Complete your licensure details to reach 100% visibility.' : 'Your profile is fully optimized for clinical matches.'}
                 </p>
               </div>
-            ) : null}
+            </div>
 
-            {verification ? (
-              <div className="ds-card" style={{ padding: 20 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <FileUp size={16} color="var(--color-teal)" />
-                  <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-ink)' }}>
-                    Current Submission
-                  </p>
+            <div className="p-8 rounded-xl bg-inverse-surface text-white shadow-xl space-y-6">
+              <h2 className="text-lg font-bold tracking-tight opacity-90 font-headline">Global Access</h2>
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                    <span className="material-symbols-outlined">public</span>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold font-headline">Remote</p>
+                    <p className="text-xs opacity-60">Full Teledentistry Access</p>
+                  </div>
                 </div>
-                <div className="grid gap-2 text-[13px] text-[var(--color-ink-4)]">
-                  <p>Document: {verification.documentName}</p>
-                  <p>Storage mode: {verification.storageMode.replace(/_/g, ' ')}</p>
-                  <p>Submitted: {formatDate(verification.submittedAt)}</p>
-                  {verification.reviewNote ? <p>Reviewer note: {verification.reviewNote}</p> : null}
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                    <span className="material-symbols-outlined">verified_user</span>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold font-headline">Secured</p>
+                    <p className="text-xs opacity-60">Identity Shield Active</p>
+                  </div>
                 </div>
               </div>
-            ) : null}
-
-            {error ? (
-              <div
-                style={{
-                  padding: 12,
-                  borderRadius: 8,
-                  background: 'var(--color-ruby)',
-                  color: '#fff',
-                  fontSize: 13,
-                  display: 'flex',
-                  gap: 8,
-                }}
-              >
-                <CircleAlert size={16} /> {error}
-              </div>
-            ) : null}
-
-            {success ? (
-              <div
-                style={{
-                  padding: 12,
-                  borderRadius: 8,
-                  background: 'var(--color-sage)',
-                  color: '#fff',
-                  fontSize: 13,
-                  display: 'flex',
-                  gap: 8,
-                }}
-              >
-                <CheckCircle2 size={16} /> {success}
-              </div>
-            ) : null}
-
-            <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
-              <button onClick={() => navigate(-1)} className="ds-btn ds-btn-ghost ds-btn-sm">
-                <ArrowLeft size={14} /> Back
-              </button>
-              <button
-                className="ds-btn ds-btn-primary ds-btn-lg"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? <Loader2 size={16} className="spin" /> : 'Submit Verification'}{' '}
-                <BadgeCheck size={16} />
-              </button>
             </div>
           </div>
         </div>
 
-        <div className="ds-grid-3" style={{ marginTop: 40 }}>
-          <InsightCard
-            icon={<Clock size={18} color="var(--color-teal)" />}
-            bg="var(--color-teal-light)"
-            title="Fast Review"
-            body="Our clinical team typically verifies credentials within 24–48 business hours."
-          />
-          <InsightCard
-            icon={<BadgeCheck size={18} color="var(--color-amber)" />}
-            bg="var(--color-amber-light)"
-            title="Secure Storage"
-            body="When secure storage is configured, the license file is stored safely before the review record is submitted."
-          />
-          <InsightCard
-            icon={<HelpCircle size={18} color="var(--color-sage)" />}
-            bg="var(--color-sage-light)"
-            title="Need Help?"
-            body="Our credentialing specialists are available at support@dentside.com."
-          />
-        </div>
+        {error && <div className="p-4 bg-error-container text-on-error-container rounded-xl text-sm font-bold flex items-center gap-2"><span className="material-symbols-outlined">error</span> {error}</div>}
+        {success && <div className="p-4 bg-primary-container/10 text-primary rounded-xl text-sm font-bold flex items-center gap-2 border border-primary/20"><span className="material-symbols-outlined">check_circle</span> {success}</div>}
       </main>
     </div>
   );
-}
-
-function InsightCard({
-  icon,
-  bg,
-  title,
-  body,
-}: {
-  icon: React.ReactNode;
-  bg: string;
-  title: string;
-  body: string;
-}) {
-  return (
-    <div className="ds-card" style={{ padding: 24, display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-      <div
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          background: bg,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        {icon}
-      </div>
-      <div>
-        <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-ink)', marginBottom: 6 }}>
-          {title}
-        </p>
-        <p style={{ fontSize: 13, color: 'var(--color-ink-4)', lineHeight: 1.6 }}>{body}</p>
-      </div>
-    </div>
-  );
-}
-
-function sanitizeFileName(name: string) {
-  return name.replace(/[^a-zA-Z0-9._-]/g, '-');
-}
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleString();
 }

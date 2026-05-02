@@ -14,25 +14,26 @@ export default function BrandMark({
   showText = true,
   compact = false,
   className = '',
-  textColor = 'var(--color-ink)',
-  subTextColor = 'var(--color-teal)',
 }: BrandMarkProps) {
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <img
-        src="/logo-icon.png"
-        alt="DentSide Remote logo"
-        width={size}
-        height={size}
-        style={{ width: size, height: size, display: 'block' }}
-      />
+    <div className={`flex items-center gap-3 ${className}`}>
+      <div
+        className="bg-primary rounded-xl flex items-center justify-center overflow-hidden shadow-lg shadow-primary/20"
+        style={{ width: size * 1.25, height: size * 1.25 }}
+      >
+        <img
+          src="/logo-icon.png"
+          alt="DentSide Remote"
+          className="w-3/5 h-3/5 object-contain"
+        />
+      </div>
 
       {showText && (
-        <div style={{ lineHeight: 1, display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: compact ? 14 : 16, fontWeight: 700, letterSpacing: '-0.02em', color: textColor }}>
+        <div className="flex flex-col leading-none">
+          <span className="font-headline font-black text-on-surface tracking-tighter" style={{ fontSize: compact ? size * 0.55 : size * 0.7 }}>
             DentSide
           </span>
-          <span style={{ fontSize: compact ? 9 : 10, lineHeight: 1.1, textTransform: 'uppercase', letterSpacing: '0.18em', color: subTextColor, fontWeight: 700 }}>
+          <span className="font-bold text-primary uppercase tracking-[0.2em]" style={{ fontSize: compact ? size * 0.35 : size * 0.4 }}>
             Remote
           </span>
         </div>

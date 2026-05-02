@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, CheckCheck, Loader2, MailOpen } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { ApiError, apiRequest, type NotificationFeed, type NotificationItem } from '../lib/api';
 
 export default function NotificationMenu() {
@@ -112,8 +112,7 @@ export default function NotificationMenu() {
     <div ref={containerRef} className="relative">
       <button
         type="button"
-        className="ds-btn ds-btn-ghost ds-btn-sm"
-        style={{ padding: '7px 10px', borderRadius: '50%', position: 'relative' }}
+        className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-all active:scale-90 relative"
         onClick={() => {
           const nextOpen = !isOpen;
           setIsOpen(nextOpen);
@@ -124,119 +123,70 @@ export default function NotificationMenu() {
         }}
         aria-label="Open notifications"
       >
-        <Bell size={15} />
+        <span className="material-symbols-outlined">notifications</span>
         {feed.unreadCount > 0 ? (
-          <span
-            style={{
-              position: 'absolute',
-              top: 4,
-              right: 4,
-              minWidth: 16,
-              height: 16,
-              borderRadius: 999,
-              background: 'var(--color-ruby)',
-              color: '#fff',
-              fontSize: 10,
-              fontWeight: 700,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '0 4px',
-            }}
-          >
+          <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 rounded-full bg-error text-white text-[10px] font-bold flex items-center justify-center px-1">
             {feed.unreadCount > 9 ? '9+' : feed.unreadCount}
           </span>
         ) : null}
       </button>
 
-      {isOpen ? (
-        <div
-          className="ds-card"
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 12px)',
-            right: 0,
-            width: 'min(360px, calc(100vw - 32px))',
-            padding: 0,
-            overflow: 'hidden',
-            zIndex: 120,
-            boxShadow: '0 18px 40px rgba(13, 15, 14, 0.12)',
-          }}
-        >
-          <div
-            className="ds-card-header"
-            style={{ padding: '16px 18px', alignItems: 'center', gap: 12 }}
-          >
+      {isOpen && (
+        <div className="absolute top-full right-0 mt-3 w-80 md:w-96 bg-surface-container-lowest editorial-shadow rounded-2xl overflow-hidden z-[100] border border-surface-variant/20">
+          <div className="p-4 flex items-center justify-between border-b border-surface-variant/10">
             <div>
-              <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-ink)' }}>
-                Notifications
-              </p>
-              <p style={{ fontSize: 12, color: 'var(--color-ink-4)' }}>
+              <h3 className="text-sm font-bold text-on-surface">Notifications</h3>
+              <p className="text-[11px] text-on-surface-variant font-medium">
                 {feed.unreadCount > 0
                   ? `${feed.unreadCount} unread update${feed.unreadCount === 1 ? '' : 's'}`
-                  : 'You are all caught up'}
+                  : 'All caught up'}
               </p>
             </div>
 
             <button
               type="button"
-              className="ds-btn ds-btn-ghost ds-btn-sm"
+              className="text-[11px] font-bold text-primary hover:underline disabled:opacity-50 disabled:no-underline flex items-center gap-1"
               onClick={handleMarkAllRead}
               disabled={isMarkingAll || feed.unreadCount === 0}
-              style={{ marginLeft: 'auto' }}
             >
-              {isMarkingAll ? <Loader2 size={13} className="spin" /> : <CheckCheck size={13} />}
+              {isMarkingAll ? <Loader2 size={12} className="animate-spin" /> : <span className="material-symbols-outlined text-sm">done_all</span>}
               Mark all read
             </button>
           </div>
 
-          <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+          <div className="max-h-96 overflow-y-auto">
             {isLoading ? (
-              <div style={{ padding: 24, textAlign: 'center' }}>
-                <Loader2 size={18} className="spin" color="var(--color-teal)" />
+              <div className="p-10 flex flex-col items-center justify-center gap-2">
+                <Loader2 size={24} className="animate-spin text-primary" />
+                <p className="text-xs text-on-surface-variant font-medium">Syncing feed...</p>
               </div>
             ) : feed.notifications.length === 0 ? (
-              <div style={{ padding: 28, textAlign: 'center' }}>
-                <MailOpen size={24} color="var(--color-fog-4)" style={{ margin: '0 auto 10px' }} />
-                <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>
-                  No notifications yet.
-                </p>
+              <div className="p-10 text-center flex flex-col items-center gap-3">
+                <span className="material-symbols-outlined text-4xl text-outline-variant">mail_lock</span>
+                <p className="text-sm text-on-surface-variant font-medium">No notifications yet.</p>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="divide-y divide-surface-variant/10">
                 {feed.notifications.map((notification) => {
                   const isBusy = activeNotificationId === notification.id;
 
                   return (
                     <div
                       key={notification.id}
-                      style={{
-                        padding: '14px 18px',
-                        borderTop: '1px solid var(--color-fog-2)',
-                        background: notification.read ? 'var(--color-white)' : 'var(--color-teal-light)',
-                      }}
+                      className={`p-4 transition-colors ${notification.read ? 'bg-transparent' : 'bg-primary-container/5'}`}
                     >
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          justifyContent: 'space-between',
-                          gap: 12,
-                          marginBottom: 6,
-                        }}
-                      >
-                        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-ink)' }}>
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <p className="text-[13px] font-bold text-on-surface leading-snug">
                           {notification.title}
                         </p>
                         <button
                           type="button"
-                          className="ds-btn ds-btn-ghost ds-btn-sm"
-                          style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}
+                          className="text-[10px] font-bold text-primary uppercase tracking-wider hover:underline flex-shrink-0"
                           onClick={() => updateNotification(notification, !notification.read)}
                           disabled={isBusy}
                         >
                           {isBusy ? (
-                            <Loader2 size={12} className="spin" />
+                            <Loader2 size={10} className="animate-spin" />
                           ) : notification.read ? (
                             'Unread'
                           ) : (
@@ -244,17 +194,10 @@ export default function NotificationMenu() {
                           )}
                         </button>
                       </div>
-                      <p
-                        style={{
-                          fontSize: 12,
-                          color: 'var(--color-ink-4)',
-                          lineHeight: 1.55,
-                          marginBottom: 8,
-                        }}
-                      >
+                      <p className="text-[12px] text-on-surface-variant leading-relaxed mb-2">
                         {notification.body}
                       </p>
-                      <p style={{ fontSize: 11, color: 'var(--color-ink-4)' }}>
+                      <p className="text-[10px] text-outline font-medium">
                         {new Date(notification.createdAt).toLocaleString()}
                       </p>
                     </div>
@@ -264,20 +207,13 @@ export default function NotificationMenu() {
             )}
           </div>
 
-          {error ? (
-            <div
-              style={{
-                borderTop: '1px solid var(--color-fog-2)',
-                padding: '10px 18px',
-                fontSize: 12,
-                color: 'var(--color-ruby)',
-              }}
-            >
+          {error && (
+            <div className="p-3 bg-error-container/20 text-error text-[11px] font-bold border-t border-error/10">
               {error}
             </div>
-          ) : null}
+          )}
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

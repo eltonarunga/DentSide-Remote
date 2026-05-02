@@ -89,7 +89,7 @@ export default function OpportunityEngine() {
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      <header className="fixed top-0 right-0 left-0 md:left-64 h-20 z-40 bg-slate-50/80 backdrop-blur-xl flex items-center justify-between px-8 shadow-[0px_12px_32px_rgba(25,28,30,0.04)]">
+      <header className="fixed top-0 right-0 left-0 md:left-64 h-20 z-40 bg-slate-50/80 backdrop-blur-xl flex items-center justify-between px-8 shadow-[0px_12px_32px_rgba(25,28,30,0.04)] border-b border-surface-variant/5">
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -119,7 +119,7 @@ export default function OpportunityEngine() {
         </div>
       </header>
 
-      <main className="flex-1 md:ml-64 pt-24 p-4 md:p-8 lg:p-12 bg-surface">
+      <main className="flex-1 md:ml-64 pt-24 p-6 md:p-10 lg:p-14 bg-surface">
         {/* Header Section */}
         <div className="mb-10">
           <span className="text-primary font-bold tracking-widest text-xs uppercase mb-2 block">Remote Opportunities</span>
@@ -128,7 +128,7 @@ export default function OpportunityEngine() {
         </div>
 
         {/* Bento Filter Bar */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
           <div className="md:col-span-1 bg-surface-container-lowest editorial-shadow rounded-2xl p-4">
             <label className="text-[10px] font-bold text-outline uppercase tracking-wider mb-2 block">Search</label>
             <div className="relative">
@@ -199,7 +199,7 @@ export default function OpportunityEngine() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {visibleGigs.map((gig) => (
-              <div key={gig.id} className="bg-surface-container-lowest rounded-2xl p-6 editorial-shadow border border-transparent hover:border-primary/20 transition-all flex flex-col group">
+              <div key={gig.id} className="bg-surface-container-lowest rounded-2xl p-8 editorial-shadow border border-transparent hover:border-primary/20 transition-all flex flex-col group">
                 <div className="flex justify-between items-start mb-6">
                   <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
                     {gig.type}

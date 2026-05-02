@@ -196,7 +196,7 @@ export default function DentistDashboard() {
       </header>
 
       {/* Main Canvas Area */}
-      <main className="flex-1 md:ml-64 pt-24 p-4 md:p-8">
+      <main className="flex-1 md:ml-64 pt-24 p-6 md:p-10 lg:p-14">
         {/* Welcome Section */}
         <section className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="pl-4 border-l-4 border-primary">

@@ -157,7 +157,13 @@ export default function IdentityVerification() {
     setIsSubmitting(true);
 
     try {
-      let uploadedDocument: UploadedDocument = { name: form.documentName };
+      let uploadedDocument: UploadedDocument = {
+        name: form.documentName,
+        path: verification?.documentPath,
+        contentType: verification?.documentContentType,
+        sizeBytes: verification?.documentSizeBytes,
+      };
+
       if (selectedFile && storageConfigured && profile?.uid) {
         const path = `verification-documents/${profile.uid}/${Date.now()}-${selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
         const uploaded = await uploadProtectedFile({ path, file: selectedFile });

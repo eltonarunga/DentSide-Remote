@@ -234,7 +234,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-surface font-body text-on-surface flex flex-col md:flex-row">
       {/* Left side - Brand/Hero */}
-      <div className="relative hidden md:flex flex-col justify-between w-1/2 bg-inverse-surface p-16 overflow-hidden">
+      <div className="relative hidden md:flex flex-col justify-between w-1/2 bg-inverse-surface p-12 lg:p-24 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent pointer-events-none" />
         <BrandMark size={40} className="relative z-10" />
 
@@ -318,7 +318,7 @@ export default function Login() {
                 </button>
               </div>
 
-              <form onSubmit={handleEmailAuth} className="space-y-5">
+              <form onSubmit={handleEmailAuth} className="space-y-6">
                 {authMode === 'signup' && (
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-outline uppercase tracking-widest pl-2">Full Name</label>

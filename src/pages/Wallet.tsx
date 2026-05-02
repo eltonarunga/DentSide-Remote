@@ -149,7 +149,7 @@ export default function Wallet() {
         </div>
       </nav>
 
-      <main className="md:ml-64 pt-24 p-4 md:p-12 space-y-10">
+      <main className="md:ml-64 pt-24 p-6 md:p-10 lg:p-14 space-y-10">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-end gap-6">
           <div>

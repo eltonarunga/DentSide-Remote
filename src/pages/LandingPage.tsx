@@ -81,7 +81,7 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
       </nav>
 
       {/* ── Hero ── */}
-      <section className="pt-40 pb-24 px-8 max-w-7xl mx-auto flex flex-col items-center text-center">
+      <section className="pt-48 pb-32 px-8 max-w-7xl mx-auto flex flex-col items-center text-center">
         <div className="inline-flex items-center gap-2 bg-primary-container/10 border border-primary/10 rounded-full px-4 py-1.5 mb-10 shadow-sm">
           <span className="material-symbols-outlined text-primary text-sm">verified</span>
           <span className="text-xs font-bold text-primary uppercase tracking-widest">
@@ -131,8 +131,8 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
       </div>
 
       {/* ── Features ── */}
-      <section id="features" className="py-32 px-8 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+      <section id="features" className="py-40 px-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
           <div>
             <span className="text-primary font-bold tracking-widest text-xs uppercase mb-4 block">
               Precision Platform
@@ -177,7 +177,7 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
       </section>
 
       {/* ── Pricing ── */}
-      <section id="pricing" className="bg-inverse-surface py-32 px-8">
+      <section id="pricing" className="bg-inverse-surface py-40 px-8">
         <div className="max-w-7xl mx-auto text-center mb-20">
           <span className="text-primary-fixed-dim font-bold tracking-widest text-xs uppercase mb-4 block">
             Membership
@@ -189,7 +189,7 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
 
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Free */}
-          <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 flex flex-col text-white">
+          <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-12 flex flex-col text-white">
             <span className="text-xs font-bold text-white/40 uppercase tracking-widest mb-6">
               Clinician Profile
             </span>
@@ -221,7 +221,7 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
           </div>
 
           {/* Pro */}
-          <div className="bg-primary-container rounded-[2.5rem] p-10 flex flex-col text-white shadow-2xl shadow-primary/20 relative overflow-hidden">
+          <div className="bg-primary-container rounded-[2.5rem] p-12 flex flex-col text-white shadow-2xl shadow-primary/20 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
             <span className="text-xs font-bold text-on-primary-container uppercase tracking-widest mb-6">
               Consult Pro

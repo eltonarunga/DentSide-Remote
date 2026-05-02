@@ -1,19 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  CalendarCheck2,
-  CalendarX,
-  Key,
-  Loader2,
-  Menu,
-  ShieldCheck,
-  Sparkles,
-  TrendingUp,
-} from 'lucide-react';
 import DentistSidebar from '../components/DentistSidebar';
 import NotificationMenu from '../components/NotificationMenu';
 import { apiRequest, type Appointment, type WalletSummary } from '../lib/api';
+import { Loader2 } from 'lucide-react';
 
 type AppointmentActionState = {
   appointmentId: string;
@@ -49,11 +40,6 @@ export default function DentistDashboard() {
         (appointment) =>
           appointment.status === 'requested' || appointment.status === 'confirmed',
       ),
-    [appointments],
-  );
-
-  const completedAppointments = useMemo(
-    () => appointments.filter((appointment) => appointment.status === 'completed').length,
     [appointments],
   );
 
@@ -146,15 +132,14 @@ export default function DentistDashboard() {
     new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 
   return (
-    <div className="ds-layout">
-      {isSidebarOpen ? (
+    <div className="flex bg-surface font-body text-on-surface min-h-screen">
+      {isSidebarOpen && (
         <button
           type="button"
-          className="ds-sidebar-backdrop md:hidden"
+          className="fixed inset-0 bg-on-surface/40 z-40 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
-          aria-label="Close navigation"
         />
-      ) : null}
+      )}
 
       <DentistSidebar
         pathname={location.pathname}
@@ -162,448 +147,296 @@ export default function DentistDashboard() {
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      <header className="ds-topbar">
-        <div className="flex items-center gap-3">
+      {/* TopAppBar */}
+      <header className="fixed top-0 right-0 left-0 md:left-64 h-20 z-40 bg-slate-50/80 backdrop-blur-xl flex items-center justify-between px-8 shadow-[0px_12px_32px_rgba(25,28,30,0.06)]">
+        <div className="flex items-center gap-4">
           <button
             type="button"
-            className="ds-sidebar-toggle"
+            className="md:hidden p-2 text-slate-500"
             onClick={() => setIsSidebarOpen(true)}
-            aria-label="Open navigation"
           >
-            <Menu size={16} />
+            <span className="material-symbols-outlined">menu</span>
           </button>
-          <p style={{ fontSize: 13, color: 'var(--color-ink-4)', fontWeight: 500 }}>
-            Good day,{' '}
-            <span style={{ color: 'var(--color-ink)', fontWeight: 600 }}>
-              {profile?.displayName || 'Doctor'}
-            </span>
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <NotificationMenu />
-          <div className="ds-avatar ds-avatar-md" style={{ overflow: 'hidden' }}>
-            <img
-              src={
-                profile?.photoURL ||
-                `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.displayName || 'D'}`
-              }
-              alt="avatar"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          <div className="hidden sm:flex items-center gap-4 bg-surface-container-low px-4 py-2 rounded-full w-96">
+            <span className="material-symbols-outlined text-outline">search</span>
+            <input
+              className="bg-transparent border-none focus:ring-0 text-sm w-full font-medium outline-none"
+              placeholder="Search gigs or clinical records..."
+              type="text"
             />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6">
+          <div className="flex gap-4">
+            <NotificationMenu />
+            <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-all">
+              <span className="material-symbols-outlined">help</span>
+            </button>
+          </div>
+          <div className="hidden xs:block h-10 w-[1px] bg-outline-variant/30"></div>
+          <div className="flex items-center gap-3">
+            <div className="text-right hidden xs:block">
+              <p className="text-sm font-bold text-sky-900 leading-tight">
+                {profile?.displayName || 'Doctor'}
+              </p>
+              <p className="text-[10px] font-medium text-slate-500 uppercase tracking-tighter">
+                {profile?.experience || 'Dental Specialist'}
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-container/20">
+              <img
+                className="w-full h-full object-cover"
+                src={profile?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.displayName || 'D'}`}
+                alt="Profile"
+              />
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="ds-main">
-        <div className="ds-page-header">
-          <p className="ds-page-eyebrow">Clinical Workspace</p>
-          <h1 className="ds-page-title">
-            Welcome back, {firstName}
-          </h1>
-          <p className="ds-page-subtitle">
-            {activeAppointments.length > 0
-              ? `You have ${activeAppointments.length} active consult${activeAppointments.length === 1 ? '' : 's'} waiting for attention.`
-              : 'Your queue is clear for now. New consult requests will appear here.'}
-          </p>
-        </div>
+      {/* Main Canvas Area */}
+      <main className="flex-1 md:ml-64 pt-24 p-4 md:p-8">
+        {/* Welcome Section */}
+        <section className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="pl-4 border-l-4 border-primary">
+            <h2 className="font-headline text-4xl font-extrabold text-on-surface tracking-tight mb-2">
+              Welcome back, {firstName}
+            </h2>
+            <p className="text-on-surface-variant font-medium">
+              Your precision hub is ready. You have {activeAppointments.length} pending consult{activeAppointments.length === 1 ? '' : 's'} today.
+            </p>
+          </div>
+          <div className="bg-surface-container-low p-1.5 rounded-xl flex items-center gap-1 shadow-sm w-fit">
+            <button className="px-5 py-2 bg-white text-primary text-xs font-bold rounded-lg shadow-sm border border-primary-container/10">Available</button>
+            <button className="px-5 py-2 text-outline text-xs font-semibold hover:bg-surface-container transition-colors rounded-lg">On Break</button>
+          </div>
+        </section>
 
-        <div className="mb-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          <div
-            className="ds-card ds-card-teal md:col-span-2"
-            style={{ padding: 28, position: 'relative', overflow: 'hidden' }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                marginBottom: 24,
-              }}
-            >
-              <div>
-                <p className="ds-stat-label" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                  Available Balance
-                </p>
-                <p className="ds-stat-value" style={{ color: '#fff' }}>
+        {/* Bento Grid Main Content */}
+        <div className="grid grid-cols-12 gap-6">
+          {/* Earnings Overview */}
+          <div className="col-span-12 lg:col-span-8 bg-surface-container-lowest rounded-xl p-8 shadow-[0px_12px_32px_rgba(25,28,30,0.04)] relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary-container/5 rounded-full -mr-20 -mt-20"></div>
+            <div className="relative z-10 flex flex-col h-full">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <span className="text-xs font-bold text-primary uppercase tracking-widest">Financial Performance</span>
+                  <h3 className="text-slate-500 font-medium">Total Balance</h3>
+                </div>
+                <span className="material-symbols-outlined text-primary bg-primary-fixed p-2 rounded-lg">trending_up</span>
+              </div>
+              <div className="flex items-baseline gap-4 mb-10">
+                <span className="text-4xl md:text-5xl font-black font-headline text-on-surface">
                   {formatMoney(walletSummary?.availableBalance || 0)}
-                </p>
-                <p className="ds-stat-meta" style={{ color: 'rgba(255,255,255,0.55)' }}>
-                  Pending settlements: {formatMoney(walletSummary?.pendingBalance || 0)}
-                </p>
+                </span>
+                <span className="text-primary font-bold text-sm bg-primary-container/10 px-2 py-0.5 rounded">
+                  {formatMoney(walletSummary?.pendingBalance || 0)} pending
+                </span>
               </div>
-              <div
-                style={{
-                  background: 'rgba(255,255,255,0.15)',
-                  borderRadius: 8,
-                  padding: '4px 12px',
-                  fontSize: 11,
-                  color: '#fff',
-                  fontWeight: 600,
-                  letterSpacing: '0.04em',
-                }}
-              >
-                WALLET
-              </div>
-            </div>
-            <div className="flex items-center gap-8">
-              <div>
-                <p
-                  style={{
-                    fontSize: 11,
-                    color: 'rgba(255,255,255,0.5)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    fontWeight: 600,
-                    marginBottom: 4,
-                  }}
-                >
-                  Completed
-                </p>
-                <p
-                  style={{
-                    fontSize: 22,
-                    fontFamily: 'var(--font-display)',
-                    color: '#fff',
-                    letterSpacing: '-0.02em',
-                  }}
-                >
-                  {completedAppointments}
-                </p>
-              </div>
-              <div>
-                <p
-                  style={{
-                    fontSize: 11,
-                    color: 'rgba(255,255,255,0.5)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    fontWeight: 600,
-                    marginBottom: 4,
-                  }}
-                >
-                  Lifetime Paid Out
-                </p>
-                <p
-                  style={{
-                    fontSize: 22,
-                    fontFamily: 'var(--font-display)',
-                    color: '#fff',
-                    letterSpacing: '-0.02em',
-                  }}
-                >
-                  {formatMoney(walletSummary?.lifetimeWithdrawn || 0)}
-                </p>
-              </div>
-              <div style={{ marginLeft: 'auto' }}>
-                <Link
-                  to="/wallet"
-                  style={{
-                    background: '#fff',
-                    color: 'var(--color-teal-dark)',
-                    borderRadius: 8,
-                    padding: '10px 18px',
-                    fontWeight: 700,
-                    fontSize: 12,
-                    letterSpacing: '0.04em',
-                    textDecoration: 'none',
-                    display: 'inline-block',
-                  }}
-                >
-                  OPEN WALLET
-                </Link>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-auto">
+                <div className="bg-surface-container-low p-4 rounded-xl">
+                  <p className="text-xs text-outline font-medium mb-1">Lifetime Earned</p>
+                  <p className="text-2xl font-bold text-on-surface">
+                    {formatMoney(walletSummary?.lifetimeWithdrawn || 0)}
+                  </p>
+                </div>
+                <div className="flex items-center justify-end">
+                  <Link
+                    to="/wallet"
+                    className="bg-primary text-on-primary px-8 py-4 rounded-xl font-bold text-sm tracking-wide uppercase shadow-lg shadow-primary/30 active:scale-95 transition-all text-center w-full sm:w-auto"
+                  >
+                    Withdraw Funds
+                  </Link>
+                </div>
               </div>
             </div>
-            <TrendingUp
-              size={120}
-              color="rgba(255,255,255,0.06)"
-              style={{ position: 'absolute', right: -20, bottom: -20 }}
-            />
           </div>
 
-          <div className="ds-card" style={{ padding: 28, display: 'flex', flexDirection: 'column' }}>
-            <div
-              className="ds-card-header"
-              style={{ padding: '0 0 16px 0', border: 'none', marginBottom: 16 }}
-            >
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-ink)' }}>
-                Verification
-              </span>
-              <ShieldCheck size={16} color="var(--color-amber)" />
+          {/* Credentialing Status */}
+          <div className="col-span-12 lg:col-span-4 bg-surface-container-low rounded-xl p-8 flex flex-col justify-between">
+            <div>
+              <h3 className="font-headline text-xl font-bold text-on-surface mb-6">Verification Progress</h3>
+              <div className="relative pt-1">
+                <div className="flex mb-4 items-center justify-between">
+                  <div>
+                    <span className="text-xs font-semibold inline-block py-1 px-3 uppercase rounded-full text-tertiary bg-tertiary-fixed">
+                      {profileStrength}% complete
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-bold inline-block text-on-surface">{profileStrength}%</span>
+                  </div>
+                </div>
+                <div className="overflow-hidden h-3 mb-6 text-xs flex rounded-full bg-surface-container-highest">
+                  <div
+                    className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary transition-all duration-500"
+                    style={{ width: `${profileStrength}%` }}
+                  ></div>
+                </div>
+              </div>
+              <p className="text-sm text-on-surface-variant leading-relaxed">
+                Your current status is <span className="font-bold">{(profile?.verificationStatus || 'unverified').replace(/_/g, ' ')}</span>.
+                Complete your profile to unlock higher-tier gigs.
+              </p>
             </div>
-            <div className="ds-progress-track" style={{ marginBottom: 12 }}>
-              <div
-                className="ds-progress-fill"
-                style={{ width: `${profileStrength}%`, background: 'var(--color-amber)' }}
-              />
-            </div>
-            <p style={{ fontSize: 13, color: 'var(--color-ink-4)', lineHeight: 1.55, flex: 1 }}>
-              Profile completion is <strong style={{ color: 'var(--color-ink)' }}>{profileStrength}%</strong>. Current review state:{' '}
-              <strong style={{ color: 'var(--color-ink)' }}>
-                {(profile?.verificationStatus || 'unverified').replace(/_/g, ' ')}
-              </strong>
-              .
-            </p>
             <Link
               to="/verification"
-              className="ds-btn ds-btn-ghost ds-btn-sm"
-              style={{ marginTop: 20, justifyContent: 'center' }}
+              className="w-full mt-8 py-3 text-center outline outline-primary/20 text-primary font-bold text-sm rounded-xl hover:bg-white transition-all duration-300"
             >
-              Review Verification
+              Update Credentials
             </Link>
           </div>
-        </div>
 
-        <div className="ds-main-split">
-          <div>
-            <div
-              className="ds-card-header"
-              style={{ background: 'none', border: 'none', padding: '0 0 20px 0', marginBottom: 0 }}
-            >
-              <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--color-ink)' }}>
-                Consult Queue
-              </h2>
-              <span style={{ fontSize: 13, color: 'var(--color-teal)', fontWeight: 600 }}>
-                {activeAppointments.length} active
+          {/* Active Gigs & Schedule */}
+          <div className="col-span-12 lg:col-span-7">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-headline text-2xl font-bold text-on-surface">Consult Queue</h3>
+              <span className="text-primary text-sm font-bold flex items-center gap-1">
+                {activeAppointments.length} Active
               </span>
             </div>
-
-            {isLoading ? (
-              <div className="ds-card" style={{ padding: 40, textAlign: 'center' }}>
-                <Loader2
-                  size={28}
-                  className="spin"
-                  color="var(--color-teal)"
-                  style={{ margin: '0 auto 12px' }}
-                />
-                <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>
-                  Loading your appointment queue…
-                </p>
-              </div>
-            ) : activeAppointments.length === 0 ? (
-              <div className="ds-card" style={{ padding: 40, textAlign: 'center' }}>
-                <CalendarX size={36} color="var(--color-fog-3)" style={{ margin: '0 auto 12px' }} />
-                <h4 style={{ fontWeight: 600, color: 'var(--color-ink)', marginBottom: 6 }}>
-                  No Active Consults
-                </h4>
-                <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>
-                  New client appointment requests will land here once they are assigned to you.
-                </p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {activeAppointments.slice(0, 4).map((appointment) => {
+            <div className="space-y-4">
+              {isLoading ? (
+                <div className="bg-white p-12 rounded-xl shadow-sm flex flex-col items-center justify-center gap-4">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <p className="text-sm text-slate-500 font-medium">Loading your queue...</p>
+                </div>
+              ) : activeAppointments.length === 0 ? (
+                <div className="bg-white p-12 rounded-xl shadow-sm flex flex-col items-center justify-center text-center">
+                  <span className="material-symbols-outlined text-4xl text-slate-300 mb-4">calendar_today</span>
+                  <h4 className="font-bold text-on-surface mb-2">No Active Consults</h4>
+                  <p className="text-sm text-slate-500">Your queue is currently empty. New requests will appear here.</p>
+                </div>
+              ) : (
+                activeAppointments.map((appointment) => {
                   const isBusy = actionState?.appointmentId === appointment.id;
-
                   return (
-                    <div key={appointment.id} className="ds-card" style={{ padding: 24 }}>
-                      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div key={appointment.id} className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-primary flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:bg-surface-container-low transition-colors duration-300">
+                      <div className="flex items-center gap-5">
+                        <div className="w-12 h-12 bg-primary-fixed rounded-xl flex items-center justify-center text-primary flex-shrink-0">
+                          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
+                            {appointment.status === 'confirmed' ? 'event_available' : 'pending_actions'}
+                          </span>
+                        </div>
                         <div>
-                          <div className="mb-2 flex flex-wrap items-center gap-2">
-                            <h3
-                              style={{
-                                fontSize: 16,
-                                fontWeight: 600,
-                                color: 'var(--color-ink)',
-                              }}
-                            >
-                              {appointment.clientName}
-                            </h3>
-                            <StatusBadge status={appointment.status} />
-                          </div>
-                          <p
-                            style={{
-                              fontSize: 13,
-                              color: 'var(--color-ink-4)',
-                              lineHeight: 1.6,
-                              marginBottom: 12,
-                            }}
-                          >
-                            {appointment.reason}
-                          </p>
-                          <p style={{ fontSize: 12, color: 'var(--color-ink-4)' }}>
-                            {appointment.scheduledFor
-                              ? `Scheduled for ${formatDate(appointment.scheduledFor)}`
-                              : 'No time confirmed yet'}
+                          <h4 className="font-bold text-on-surface group-hover:text-primary transition-colors">{appointment.clientName}</h4>
+                          <p className="text-sm text-outline font-medium">{appointment.reason}</p>
+                          <p className="text-[11px] text-slate-400 mt-1">
+                            {appointment.scheduledFor ? new Date(appointment.scheduledFor).toLocaleString() : 'Requested'}
                           </p>
                         </div>
                       </div>
-
-                      <div className="flex flex-wrap gap-3">
-                        {appointment.status === 'requested' ? (
-                          <button
-                            type="button"
-                            className="ds-btn ds-btn-primary ds-btn-sm"
-                            onClick={() => handleAppointmentAction(appointment.id, 'confirmed')}
-                            disabled={isBusy}
-                          >
-                            {isBusy && actionState?.nextStatus === 'confirmed' ? (
-                              <Loader2 size={13} className="spin" />
-                            ) : (
-                              <CalendarCheck2 size={13} />
-                            )}
-                            Confirm
-                          </button>
-                        ) : null}
-
-                        {appointment.status === 'confirmed' ? (
-                          <button
-                            type="button"
-                            className="ds-btn ds-btn-primary ds-btn-sm"
-                            onClick={() => handleAppointmentAction(appointment.id, 'completed')}
-                            disabled={isBusy}
-                          >
-                            {isBusy && actionState?.nextStatus === 'completed' ? (
-                              <Loader2 size={13} className="spin" />
-                            ) : (
-                              <CalendarCheck2 size={13} />
-                            )}
-                            Mark Complete
-                          </button>
-                        ) : null}
-
-                        <button
-                          type="button"
-                          className="ds-btn ds-btn-ghost ds-btn-sm"
-                          style={{ color: 'var(--color-ruby)' }}
-                          onClick={() => handleAppointmentAction(appointment.id, 'cancelled')}
-                          disabled={isBusy}
-                        >
-                          {isBusy && actionState?.nextStatus === 'cancelled' ? (
-                            <Loader2 size={13} className="spin" />
-                          ) : (
-                            <CalendarX size={13} />
+                      <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end">
+                        <div className="flex gap-2">
+                          {appointment.status === 'requested' && (
+                            <button
+                              onClick={() => handleAppointmentAction(appointment.id, 'confirmed')}
+                              disabled={!!actionState}
+                              className="px-3 py-1.5 bg-primary text-on-primary text-[11px] font-bold rounded-lg flex items-center gap-1"
+                            >
+                              {isBusy && actionState?.nextStatus === 'confirmed' ? <Loader2 size={12} className="animate-spin" /> : 'Confirm'}
+                            </button>
                           )}
-                          Cancel
-                        </button>
+                          {appointment.status === 'confirmed' && (
+                            <button
+                              onClick={() => handleAppointmentAction(appointment.id, 'completed')}
+                              disabled={!!actionState}
+                              className="px-3 py-1.5 bg-primary text-on-primary text-[11px] font-bold rounded-lg flex items-center gap-1"
+                            >
+                              {isBusy && actionState?.nextStatus === 'completed' ? <Loader2 size={12} className="animate-spin" /> : 'Complete'}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleAppointmentAction(appointment.id, 'cancelled')}
+                            disabled={!!actionState}
+                            className="px-3 py-1.5 border border-error/20 text-error text-[11px] font-bold rounded-lg flex items-center gap-1 hover:bg-error/5"
+                          >
+                            {isBusy && actionState?.nextStatus === 'cancelled' ? <Loader2 size={12} className="animate-spin" /> : 'Cancel'}
+                          </button>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                          appointment.status === 'confirmed' ? 'text-primary bg-primary-fixed' : 'text-tertiary bg-tertiary-fixed'
+                        }`}>
+                          {appointment.status}
+                        </span>
                       </div>
                     </div>
                   );
-                })}
-              </div>
-            )}
-
-            {error ? (
-              <p style={{ marginTop: 12, fontSize: 13, color: 'var(--color-ruby)' }}>{error}</p>
-            ) : null}
+                })
+              )}
+            </div>
           </div>
 
-          <div>
-            <div
-              className="ds-card-header"
-              style={{ background: 'none', border: 'none', padding: '0 0 20px 0' }}
-            >
-              <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--color-ink)' }}>
-                AI Matchmaker
-              </h2>
-              <Sparkles size={16} color="var(--color-teal)" />
+          {/* AI Matchmaker Section */}
+          <div className="col-span-12 lg:col-span-5">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-headline text-2xl font-bold text-on-surface">AI Matchmaker</h3>
+              <span className="material-symbols-outlined text-primary">auto_awesome</span>
             </div>
-            <div className="ds-card" style={{ padding: 20 }}>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                <div style={{ position: 'relative', flex: 1 }}>
-                  <Key
-                    size={14}
-                    color="var(--color-fog-4)"
-                    style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}
-                  />
-                  <input
-                    type="password"
-                    placeholder="Gemini API Key"
-                    value={apiKey}
-                    onChange={(event) => setApiKey(event.target.value)}
-                    className="ds-input"
-                    style={{ paddingLeft: 36, fontSize: 13 }}
-                  />
+            <div className="bg-surface-container-low rounded-xl p-4 space-y-3">
+              <div className="bg-surface-container-lowest p-5 rounded-xl border border-transparent hover:border-primary/20 transition-all">
+                <div className="flex gap-2 mb-4">
+                  <div className="relative flex-1">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">key</span>
+                    <input
+                      type="password"
+                      placeholder="Gemini API Key"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="w-full bg-surface-container-low border-none rounded-lg py-2 pl-10 pr-4 text-xs focus:ring-2 focus:ring-primary/20 outline-none"
+                    />
+                  </div>
+                  <button
+                    onClick={handleAIMatch}
+                    disabled={isMatching || !apiKey}
+                    className="px-4 py-2 bg-primary text-on-primary text-xs font-bold rounded-lg active:scale-95 transition-transform disabled:opacity-50"
+                  >
+                    {isMatching ? <Loader2 size={14} className="animate-spin" /> : 'Match'}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleAIMatch}
-                  disabled={isMatching || !apiKey}
-                  className="ds-btn ds-btn-primary ds-btn-sm"
-                  style={{ flexShrink: 0 }}
-                >
-                  {isMatching ? <Loader2 size={14} className="spin" /> : 'Find'}
-                </button>
-              </div>
 
-              {matches.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {matches.map((match, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        padding: '14px 16px',
-                        border: '1px solid var(--color-fog-2)',
-                        borderRadius: 10,
-                        cursor: 'pointer',
-                        transition: 'border-color 0.15s',
-                      }}
-                      onMouseOver={(event) => {
-                        event.currentTarget.style.borderColor = 'var(--color-teal-mid)';
-                      }}
-                      onMouseOut={(event) => {
-                        event.currentTarget.style.borderColor = 'var(--color-fog-2)';
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-ink)' }}>
-                          {match.title}
-                        </span>
-                        <span style={{ fontSize: 13, color: 'var(--color-teal)', fontWeight: 700 }}>
-                          {match.rate}
-                        </span>
+                {matches.length > 0 ? (
+                  <div className="space-y-3">
+                    {matches.map((match, idx) => (
+                      <div key={idx} className="p-3 border border-outline-variant/30 rounded-lg hover:border-primary/40 transition-colors cursor-pointer">
+                        <div className="flex justify-between items-start mb-1">
+                          <h5 className="font-bold text-on-surface text-sm">{match.title}</h5>
+                          <span className="text-xs font-black text-primary">{match.rate}</span>
+                        </div>
+                        <p className="text-[10px] text-on-surface-variant mb-2">{match.company} • {match.match} Match</p>
+                        <div className="flex flex-wrap gap-1">
+                          {match.tags.map((tag: string, i: number) => (
+                            <span key={i} className="text-[9px] font-bold bg-secondary-container text-on-secondary-container px-1.5 py-0.5 rounded">{tag}</span>
+                          ))}
+                        </div>
                       </div>
-                      <p style={{ fontSize: 12, color: 'var(--color-ink-4)', marginBottom: 8 }}>
-                        {match.company} · {match.match} Match
-                      </p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                        {match.tags.map((tag: string, index: number) => (
-                          <span key={`${tag}-${index}`} className="ds-tag" style={{ fontSize: 10 }}>
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '32px 16px' }}>
-                  <Sparkles size={28} color="var(--color-fog-3)" style={{ margin: '0 auto 10px' }} />
-                  <p style={{ fontSize: 13, color: 'var(--color-ink-4)' }}>
-                    Enter your API key to get personalised gig recommendations.
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-on-surface-variant leading-relaxed text-center py-4">
+                    Enter your API key to find clinical opportunities tailored to your expertise.
                   </p>
-                </div>
-              )}
+                )}
 
-              <Link
-                to="/opportunities"
-                className="ds-btn ds-btn-ghost ds-btn-sm"
-                style={{ marginTop: 16, width: '100%', justifyContent: 'center' }}
-              >
-                Explore All Gigs
-              </Link>
+                <Link
+                  to="/opportunities"
+                  className="block w-full mt-4 py-3 bg-surface-container-high text-on-surface text-center text-xs font-bold rounded-lg active:scale-95 transition-transform uppercase tracking-widest"
+                >
+                  Browse Marketplace
+                </Link>
+              </div>
             </div>
           </div>
         </div>
+
+        {error && (
+          <div className="mt-8 p-4 bg-error-container text-on-error-container rounded-xl text-sm font-medium flex items-center gap-2">
+            <span className="material-symbols-outlined">error</span>
+            {error}
+          </div>
+        )}
       </main>
     </div>
   );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const tone =
-    status === 'confirmed' || status === 'completed'
-      ? 'ds-badge-teal'
-      : status === 'cancelled'
-        ? 'ds-badge-ruby'
-        : 'ds-badge-amber';
-
-  return (
-    <span className={`ds-badge ${tone}`} style={{ textTransform: 'capitalize' }}>
-      {status.replace(/_/g, ' ')}
-    </span>
-  );
-}
-
-function formatDate(value?: string) {
-  return value ? new Date(value).toLocaleString() : 'Not scheduled';
 }

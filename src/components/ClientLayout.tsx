@@ -102,7 +102,7 @@ export default function ClientLayout({
 
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
         {/* Top Bar */}
-        <header className="sticky top-0 z-50 border-b border-surface-variant/10 bg-white/85 shadow-[0px_12px_32px_rgba(25,28,30,0.04)] backdrop-blur-xl">
+        <header className="sticky top-0 z-50 border-b border-surface-variant/10 bg-slate-50/85 shadow-[0px_12px_32px_rgba(25,28,30,0.04)] backdrop-blur-xl">
           <div className="page-shell page-padding flex h-20 items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               <button
@@ -138,7 +138,7 @@ export default function ClientLayout({
         </header>
 
         {/* Main */}
-        <main className="flex-1 section-gap page-padding bg-gradient-to-b from-white/40 to-transparent">
+        <main className="flex-1 section-gap page-padding">
           <div className="page-shell">
             {children}
           </div>

@@ -74,7 +74,6 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
             </button>
           </div>
         </div>
-        </div>
       </nav>
 
       {/* ── Hero ── */}
@@ -104,8 +103,6 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
       </section>
 
       <div className="bg-surface-container-low border-y border-outline-variant/20 py-4 overflow-hidden">

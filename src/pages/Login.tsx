@@ -234,7 +234,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-surface font-body text-on-surface flex flex-col md:flex-row">
       {/* Left side - Brand/Hero */}
-      <div className="relative hidden md:flex flex-col justify-between w-1/2 bg-inverse-surface p-16 overflow-hidden">
+      <div className="relative hidden lg:flex flex-col justify-between w-[48%] bg-inverse-surface px-12 xl:px-16 py-14 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent pointer-events-none" />
         <BrandMark size={40} className="relative z-10" />
 
@@ -261,8 +261,8 @@ export default function Login() {
       </div>
 
       {/* Right side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-surface">
-        <div className="w-full max-w-md">
+      <div className="flex-1 flex items-center justify-center px-5 py-10 sm:px-8 bg-gradient-to-b from-white to-surface-container-low">
+        <div className="w-full max-w-md lg:max-w-lg">
           <div className="mb-10 text-center md:text-left">
             <BrandMark size={32} className="md:hidden mb-12 flex justify-center" />
             <span className="text-primary font-bold tracking-widest text-xs uppercase mb-2 block">

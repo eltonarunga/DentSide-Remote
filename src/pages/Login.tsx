@@ -232,7 +232,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-surface font-body text-on-surface flex flex-col md:flex-row">
+    <div className="min-h-screen bg-surface font-body text-on-surface flex flex-col lg:flex-row">
       {/* Left side - Brand/Hero */}
       <div className="relative hidden lg:flex flex-col justify-between w-[48%] bg-inverse-surface px-12 xl:px-16 py-14 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent pointer-events-none" />
@@ -246,14 +246,14 @@ export default function Login() {
             Every gig, <br />
             <span className="text-primary italic">one precision hub.</span>
           </h1>
-          <p className="text-xl text-white/60 font-medium max-w-md leading-relaxed">
+          <p className="text-xl text-white/70 font-medium max-w-md leading-relaxed">
             Teledentistry, claims review, and consulting roles built for the modern dental pioneer.
           </p>
         </div>
 
-        <div className="relative z-10 flex gap-4">
+        <div className="relative z-10 grid gap-4 sm:grid-cols-3">
           {['HIPAA Compliant', 'Verified', 'Global Payouts'].map((badge) => (
-            <div key={badge} className="bg-white/10 px-4 py-1.5 rounded-full text-[10px] font-bold text-white/80 uppercase tracking-widest border border-white/10">
+            <div key={badge} className="bg-white/10 px-4 py-2 rounded-2xl text-[10px] font-bold text-white/80 uppercase tracking-widest border border-white/10 text-center">
               {badge}
             </div>
           ))}
@@ -261,28 +261,29 @@ export default function Login() {
       </div>
 
       {/* Right side - Form */}
-      <div className="flex-1 flex items-center justify-center px-5 py-10 sm:px-8 bg-surface">
+      <div className="flex-1 flex items-center justify-center px-5 py-10 sm:px-8 lg:px-12 bg-surface">
         <div className="w-full max-w-md lg:max-w-lg">
-          <div className="mb-10 text-center md:text-left">
-            <BrandMark size={32} className="md:hidden mb-12 flex justify-center" />
-            <span className="text-primary font-bold tracking-widest text-xs uppercase mb-2 block">
-              Identity & Access
-            </span>
-            <h2 className="font-headline text-4xl font-black text-on-surface tracking-tight mb-4">
-              {step === 'role_selection'
-                ? 'Almost there'
-                : authMode === 'signin'
-                ? 'Welcome back'
-                : 'Join the network'}
-            </h2>
-            <p className="text-on-surface-variant font-medium leading-relaxed">
-              {step === 'role_selection'
-                ? 'Tell us how you plan to use DentSide Remote.'
-                : 'Secure clinical access for verified practitioners and healthcare partners.'}
-            </p>
-          </div>
+          <div className="bg-surface border border-surface-variant/20 rounded-[2rem] shadow-[0_30px_80px_rgba(15,23,42,0.08)] p-8 sm:p-10">
+            <div className="mb-10 text-center md:text-left">
+              <BrandMark size={32} className="md:hidden mb-12 flex justify-center" />
+              <span className="text-primary font-bold tracking-widest text-xs uppercase mb-2 block">
+                Identity & Access
+              </span>
+              <h2 className="font-headline text-4xl font-black text-on-surface tracking-tight mb-4">
+                {step === 'role_selection'
+                  ? 'Almost there'
+                  : authMode === 'signin'
+                  ? 'Welcome back'
+                  : 'Join the network'}
+              </h2>
+              <p className="text-on-surface-variant font-medium leading-relaxed max-w-xl mx-auto md:mx-0">
+                {step === 'role_selection'
+                  ? 'Tell us how you plan to use DentSide Remote.'
+                  : 'Secure clinical access for verified practitioners and healthcare partners.'}
+              </p>
+            </div>
 
-          <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait">
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
@@ -466,5 +467,6 @@ export default function Login() {
         </div>
       </div>
     </div>
+  </div>
   );
 }

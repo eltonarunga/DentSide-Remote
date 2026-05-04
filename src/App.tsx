@@ -34,7 +34,7 @@ function ProtectedRoute({
   if (loading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -67,7 +67,7 @@ function AppRoutes() {
       <Route path="/" element={
         loading || profileLoading ? (
           <div className="min-h-screen flex items-center justify-center bg-slate-50">
-            <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
           </div>
         ) : user && profile ? (
           <Navigate to={getDashboardPathForRole(profile.role)} replace />

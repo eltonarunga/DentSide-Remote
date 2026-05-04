@@ -268,7 +268,7 @@ export default function IdentityVerification() {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold tracking-tight font-headline">Verified Credentials</h2>
               <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                verification?.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                verification?.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
               }`}>
                 {verification?.status || 'unverified'}
               </span>

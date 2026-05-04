@@ -88,7 +88,7 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
       <section className="ds-hero-content">
         <div style={{ width: '100%', maxWidth: 920, padding: '0 14px' }}>
           <div className="inline-flex items-center gap-2 rounded-full bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.12)] px-4 py-2 mb-10">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[var(--color-teal-mid)]" />
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[var(--color-blue-mid)]" />
             <span className="text-[12px] text-[var(--color-fog-3)] font-medium">
               Remote dental income, unified
             </span>
@@ -138,7 +138,7 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
       <section id="features" style={{ background: 'var(--color-paper)', padding: '96px 40px' }}>
         <div style={{ maxWidth: '1080px', margin: '0 auto' }}>
           <div style={{ marginBottom: '56px' }}>
-            <p style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-teal)', fontWeight: 600, marginBottom: '12px' }}>
+            <p style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-blue)', fontWeight: 600, marginBottom: '12px' }}>
               Platform capabilities
             </p>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '42px', letterSpacing: '-0.03em', color: 'var(--color-ink)', lineHeight: 1.1, maxWidth: '480px' }}>
@@ -151,9 +151,9 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
               <div key={i} style={{ background: 'var(--color-white)', padding: '40px 36px' }}>
                 <div style={{
                   width: '48px', height: '48px', borderRadius: '10px',
-                  background: 'var(--color-teal-light)',
+                  background: 'var(--color-blue-light)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--color-teal)',
+                  color: 'var(--color-blue)',
                   marginBottom: '20px',
                 }}>
                   {f.icon}
@@ -174,7 +174,7 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
       <section id="pricing" style={{ background: 'var(--color-ink)', padding: '96px 40px' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '56px' }}>
-            <p style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-teal-mid)', fontWeight: 600, marginBottom: '12px' }}>
+            <p style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-blue-mid)', fontWeight: 600, marginBottom: '12px' }}>
               Pricing
             </p>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '42px', letterSpacing: '-0.03em', color: 'var(--color-white)', lineHeight: 1.1 }}>
@@ -191,7 +191,7 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
 
               {['Access to all freelance gigs', 'Standard identity verification', 'Global wallet & withdrawals', 'AI Matchmaker (BYOK)'].map(item => (
                 <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-teal-mid)" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue-mid)" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                   <span style={{ fontSize: '14px', color: 'var(--color-fog-3)' }}>{item}</span>
                 </div>
               ))}
@@ -202,7 +202,7 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
             </div>
 
             {/* Pro */}
-            <div style={{ background: 'var(--color-teal)', border: '1px solid var(--color-teal)', borderRadius: '16px', padding: '36px 32px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--color-blue)', border: '1px solid var(--color-blue)', borderRadius: '16px', padding: '36px 32px', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '180px', height: '180px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }}/>
               <p style={{ fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', fontWeight: 600, marginBottom: '12px', position: 'relative' }}>Consult Pro</p>
               <div style={{ position: 'relative' }}>
@@ -220,7 +220,7 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
 
                 <button onClick={onGetStarted} style={{
                   width: '100%', marginTop: '28px', padding: '12px',
-                  background: 'white', color: 'var(--color-teal-dark)',
+                  background: 'white', color: 'var(--color-blue-dark)',
                   border: 'none', borderRadius: '8px', cursor: 'pointer',
                   fontSize: '13px', fontWeight: 600, fontFamily: 'var(--font-sans)',
                 }}>
@@ -250,7 +250,7 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
                 fontSize: 'clamp(48px, 6vw, 80px)',
                 letterSpacing: '-0.03em',
                 lineHeight: 1,
-                color: word === '·' ? 'var(--color-teal)' : 'transparent',
+                color: word === '·' ? 'var(--color-blue)' : 'transparent',
                 WebkitTextStroke: word === '·' ? '0' : '1px var(--color-ink-4)',
                 marginRight: '24px',
                 display: 'inline-block',
@@ -275,7 +275,7 @@ export default function LandingPage({ onGetStarted }: LandingProps) {
                 fontSize: 'clamp(48px, 6vw, 80px)',
                 letterSpacing: '-0.03em',
                 lineHeight: 1,
-                color: word === '·' ? 'var(--color-teal)' : 'var(--color-ink-3)',
+                color: word === '·' ? 'var(--color-blue)' : 'var(--color-ink-3)',
                 marginRight: '24px',
                 display: 'inline-block',
                 fontStyle: i % 6 === 0 ? 'italic' : 'normal',

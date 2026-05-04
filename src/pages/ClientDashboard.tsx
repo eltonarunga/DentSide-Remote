@@ -26,10 +26,10 @@ export default function ClientDashboard() {
           {/* Find a Dentist */}
           <Link
             to="/client/network"
-            className="ds-card no-underline p-7 focus:outline-none focus:ring-2 focus:ring-[rgba(13,122,107,0.25)]"
+            className="ds-card no-underline p-7 focus:outline-none focus:ring-2 focus:ring-[rgba(37,99,235,0.25)]"
           >
             <div className="ds-feature-icon mb-4">
-              <Search size={20} color="var(--color-teal)" />
+              <Search size={20} color="var(--color-blue)" />
             </div>
             <h2 className="text-[18px] font-semibold text-[var(--color-ink)] mb-2">
               Find a Dentist
@@ -37,7 +37,7 @@ export default function ClientDashboard() {
             <p className="text-[13px] text-[var(--color-ink-4)] leading-relaxed mb-5">
               Search our global network of verified dental professionals for consults or freelance work.
             </p>
-            <div className="inline-flex items-center gap-1.5 text-[13px] text-[var(--color-teal)] font-semibold">
+            <div className="inline-flex items-center gap-1.5 text-[13px] text-[var(--color-blue)] font-semibold">
               Browse Network <ArrowRight size={13} />
             </div>
           </Link>
@@ -45,10 +45,10 @@ export default function ClientDashboard() {
           {/* My Appointments */}
           <Link
             to="/client/appointments"
-            className="ds-card no-underline p-7 focus:outline-none focus:ring-2 focus:ring-[rgba(13,122,107,0.25)]"
+            className="ds-card no-underline p-7 focus:outline-none focus:ring-2 focus:ring-[rgba(37,99,235,0.25)]"
           >
-            <div className="ds-feature-icon mb-4 bg-[var(--color-amber-light)]">
-              <Calendar size={20} color="var(--color-amber)" />
+            <div className="ds-feature-icon mb-4 bg-[var(--color-blue-light)]">
+              <Calendar size={20} color="var(--color-blue)" />
             </div>
             <h2 className="text-[18px] font-semibold text-[var(--color-ink)] mb-2">
               My Appointments
@@ -56,7 +56,7 @@ export default function ClientDashboard() {
             <p className="text-[13px] text-[var(--color-ink-4)] leading-relaxed mb-5">
               View your upcoming teledentistry sessions and past consultation notes.
             </p>
-            <div className="inline-flex items-center gap-1.5 text-[13px] text-[var(--color-teal)] font-semibold">
+            <div className="inline-flex items-center gap-1.5 text-[13px] text-[var(--color-blue)] font-semibold">
               View Appointments <ArrowRight size={13} />
             </div>
           </Link>

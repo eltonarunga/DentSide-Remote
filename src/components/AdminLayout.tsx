@@ -1,15 +1,28 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  BadgeCheck,
+  Briefcase,
+  Calendar,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Shield,
+  Users,
+  Wallet,
+  X,
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import BrandMark from './BrandMark';
 import NotificationMenu from './NotificationMenu';
 
 const ADMIN_NAV_ITEMS = [
-  { label: 'Overview', hash: '#overview', icon: 'monitoring' },
-  { label: 'Users', hash: '#users', icon: 'group' },
-  { label: 'Verification', hash: '#verifications', icon: 'verified_user' },
-  { label: 'Marketplace', hash: '#gigs', icon: 'work' },
-  { label: 'Appointments', hash: '#appointments', icon: 'event' },
-  { label: 'Withdrawals', hash: '#withdrawals', icon: 'account_balance_wallet' },
+  { label: 'Overview', hash: '#overview', icon: LayoutDashboard },
+  { label: 'Users', hash: '#users', icon: Users },
+  { label: 'Verification', hash: '#verifications', icon: BadgeCheck },
+  { label: 'Marketplace', hash: '#gigs', icon: Briefcase },
+  { label: 'Appointments', hash: '#appointments', icon: Calendar },
+  { label: 'Withdrawals', hash: '#withdrawals', icon: Wallet },
 ];
 
 export default function AdminLayout({
@@ -47,124 +60,98 @@ export default function AdminLayout({
   };
 
   return (
-    <div className="flex bg-surface font-body text-on-surface min-h-screen antialiased">
-      {/* Mobile Backdrop */}
-      {isSidebarOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 bg-on-surface/40 z-[60] md:hidden backdrop-blur-sm"
-          onClick={() => setIsSidebarOpen(false)}
-          aria-label="Close navigation"
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={`fixed left-0 top-0 h-screen w-64 z-[70] bg-slate-900 flex flex-col p-6 space-y-2 transition-transform duration-300 md:translate-x-0 ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="mb-10 px-2 flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-            <span className="material-symbols-outlined text-on-primary" style={{ fontSize: '24px' }}>
-              admin_panel_settings
-            </span>
-          </div>
-          <div>
-            <h1 className="font-headline text-xl font-bold text-white leading-tight">DentSide</h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Admin Command</p>
-          </div>
-        </div>
-
-        <nav className="flex-1 space-y-1">
-          <div className="px-3 mb-2">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Console</p>
-          </div>
-          {ADMIN_NAV_ITEMS.map(({ label, hash, icon }) => (
-            <button
-              key={hash}
-              type="button"
-              onClick={() => handleNav(hash)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-left ${
-                activeHash === hash
-                  ? 'bg-primary text-white shadow-lg shadow-primary/20 font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <span
-                className="material-symbols-outlined"
-                style={{
-                  fontVariationSettings: activeHash === hash ? "'FILL' 1" : undefined,
-                  fontSize: '20px'
-                }}
-              >
-                {icon}
-              </span>
-              <span className="text-sm font-medium">{label}</span>
-            </button>
-          ))}
-
-          <div className="px-3 mt-6 mb-2">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tools</p>
-          </div>
-          <Link
-            to="/gig-studio"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-              location.pathname === '/gig-studio'
-                ? 'bg-primary text-white shadow-lg shadow-primary/20 font-bold'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>work_history</span>
-            <span className="text-sm font-medium">Gig Studio</span>
-          </Link>
-          <Link
-            to="/"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>public</span>
-            <span className="text-sm font-medium">Public Site</span>
-          </Link>
-        </nav>
-
-        <div className="mt-auto pt-6 border-t border-slate-800 space-y-4">
+    <div className="ds-layout">
+      <aside className={`ds-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+        <div className="ds-sidebar-logo">
+          <BrandMark size={32} showText={false} />
           <button
             type="button"
-            className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-error hover:bg-error-container/10 rounded-lg transition-all duration-200"
-            onClick={async () => {
-              setIsSidebarOpen(false);
-              await logout();
-              navigate('/');
-            }}
+            className="ds-sidebar-close"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-label="Close navigation"
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-              logout
-            </span>
-            <span className="text-sm font-medium">Sign Out</span>
+            <X size={16} />
           </button>
         </div>
+        <nav className="ds-sidebar-nav">
+          <div className="ds-sidebar-section">
+            <div className="ds-sidebar-section-label">Admin Console</div>
+            {ADMIN_NAV_ITEMS.map(({ label, hash, icon: Icon }) => (
+              <button
+                key={hash}
+                type="button"
+                className={`ds-nav-item${activeHash === hash ? ' active' : ''}`}
+                onClick={() => handleNav(hash)}
+              >
+                <Icon size={16} className="nav-icon" />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="ds-sidebar-section">
+            <Link to="/" className="ds-nav-item" onClick={() => setIsSidebarOpen(false)}>
+              <Shield size={16} className="nav-icon" />
+              Public Site
+            </Link>
+          </div>
+
+          <div className="ds-sidebar-section" style={{ marginTop: 'auto' }}>
+            <button
+              type="button"
+              className="ds-nav-item"
+              style={{ color: 'var(--color-ruby)' }}
+              onClick={async () => {
+                setIsSidebarOpen(false);
+                await logout();
+                navigate('/');
+              }}
+            >
+              <LogOut size={16} className="nav-icon" />
+              Sign Out
+            </button>
+          </div>
+        </nav>
       </aside>
 
-      <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
-        {/* Top Bar */}
-        <header className="sticky top-0 z-50 border-b border-surface-variant/10 bg-slate-50/85 shadow-[0px_12px_32px_rgba(25,28,30,0.04)] backdrop-blur-xl">
-          <div className="page-shell page-padding flex h-20 items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <button type="button" className="md:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-all" onClick={() => setIsSidebarOpen(true)} aria-label="Toggle navigation menu"><span className="material-symbols-outlined">menu</span></button>
-              <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full"><span className="material-symbols-outlined text-primary text-sm">shield</span><span className="text-[10px] font-bold text-primary uppercase tracking-widest">Admin Control</span></div>
-              <p className="text-sm font-bold text-sky-900 leading-tight hidden sm:block">{title}</p>
-            </div>
-            <div className="flex items-center gap-4 sm:gap-6"><div className="flex items-center gap-4"><NotificationMenu /><button className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-all"><span className="material-symbols-outlined">settings</span></button></div><div className="hidden xs:block h-10 w-[1px] bg-outline-variant/30"></div><div className="flex items-center gap-3"><div className="text-right hidden sm:block"><p className="text-sm font-bold text-sky-900 leading-tight">{profile?.displayName || 'Admin'}</p><p className="text-[10px] font-medium text-slate-500 uppercase tracking-tighter">System Administrator</p></div><div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-container/20"><img src={profile?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.displayName || 'A'}`} alt="avatar" className="w-full h-full object-cover" /></div></div></div>
-          </div>
-        </header>
+      <header className="ds-topbar">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            className="ds-sidebar-toggle"
+            onClick={() => setIsSidebarOpen((open) => !open)}
+            aria-label="Toggle navigation menu"
+          >
+            <Menu size={16} />
+          </button>
+          <p className="text-[13px] text-[var(--color-ink-4)] font-medium truncate">{title}</p>
+        </div>
 
-        {/* Main */}
-        <main className="flex-1 section-gap page-padding">
-          <div className="page-shell">
-            {children}
+        <div className="flex items-center gap-3">
+          <NotificationMenu />
+          <div className="hidden md:flex items-center gap-2 rounded-full border border-[var(--color-fog-2)] bg-white px-3 py-1.5">
+            <Shield size={13} color="var(--color-teal)" />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-teal-dark)]">
+              Admin
+            </span>
           </div>
-        </main>
-      </div>
+          <span className="hidden sm:block text-[13px] text-[var(--color-ink-4)] font-medium">
+            {profile?.displayName || profile?.email}
+          </span>
+          <div className="ds-avatar ds-avatar-md">
+            <img
+              src={
+                profile?.photoURL ||
+                `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.displayName || 'A'}`
+              }
+              alt="avatar"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </div>
+        </div>
+      </header>
+
+      <main className="ds-main">{children}</main>
     </div>
   );
 }

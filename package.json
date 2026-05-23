@@ -1,7 +1,8 @@
 {
-  "name": "react-example",
+  "name": "dentside-remote",
+  "description": "Remote career hub for dentists with teledentistry, gigs, and payments",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "engines": {
     "node": ">=22.6.0"

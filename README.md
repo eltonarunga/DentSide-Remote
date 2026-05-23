@@ -54,8 +54,8 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 ## Setup & Running Locally
 1. Clone the repository.
 2. Run `npm install` to install dependencies.
-3. Create a root `.env` file based on [.env.example](/home/jay/Desktop/DentSide-Remote/.env.example) for frontend Vite variables.
-4. Create a `server/.env` file based on [server/.env.example](/home/jay/Desktop/DentSide-Remote/server/.env.example) for backend Express variables.
+3. Create a `server/.env` file based on [server/.env.example](/home/jay/Desktop/DentSide-Remote/server/.env.example) with both backend and frontend Vite variables.
+4. For local development, you may optionally create a root `.env` file to override frontend Vite variables (e.g., `VITE_API_BASE_URL` for a separate backend).
 5. Add backend env vars in `server/.env`:
    - `SUPABASE_URL`
    - `SUPABASE_ANON_KEY`

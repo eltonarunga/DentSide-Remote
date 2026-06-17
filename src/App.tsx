@@ -6,14 +6,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { getDashboardPathForRole, type Role } from './lib/api';
-import LandingPage from './pages/LandingPage';
-import DentistDashboard from './pages/DentistDashboard';
+import Landing from './components/Landing';
+import Dashboard from './components/Dashboard';
 import ClientDashboard from './pages/ClientDashboard';
-import ClientNetwork from './pages/ClientNetwork';
-import ClientAppointments from './pages/ClientAppointments';
-import GigStudio from './pages/GigStudio';
-import AdminDashboard from './pages/AdminDashboard';
 import IdentityVerification from './pages/IdentityVerification';
 import OpportunityEngine from './pages/OpportunityEngine';
 import Wallet from './pages/Wallet';
@@ -22,19 +17,13 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import { Loader2 } from 'lucide-react';
 
-function ProtectedRoute({
-  children,
-  allowedRole,
-}: {
-  children: React.ReactNode;
-  allowedRole?: Role | Role[];
-}) {
-  const { user, profile, loading, profileLoading } = useAuth();
+function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode, allowedRole?: 'dentist' | 'client' }) {
+  const { user, profile, loading } = useAuth();
 
-  if (loading || profileLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
       </div>
     );
   }
@@ -43,16 +32,9 @@ function ProtectedRoute({
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRole && profile) {
-    const allowedRoles = Array.isArray(allowedRole) ? allowedRole : [allowedRole];
-
-    if (!allowedRoles.includes(profile.role)) {
-      return <Navigate to={getDashboardPathForRole(profile.role)} replace />;
-    }
-  }
-
-  if (allowedRole && !profile) {
-    return <Navigate to="/login" replace />;
+  if (allowedRole && profile && profile.role !== allowedRole) {
+    // Redirect to correct dashboard if wrong role
+    return <Navigate to={profile.role === 'dentist' ? '/dashboard' : '/client-dashboard'} replace />;
   }
 
   return <>{children}</>;
@@ -60,21 +42,15 @@ function ProtectedRoute({
 
 function AppRoutes() {
   const navigate = useNavigate();
-  const { user, profile, loading, profileLoading, needsProfileSetup } = useAuth();
+  const { user, profile } = useAuth();
   
   return (
     <Routes>
       <Route path="/" element={
-        loading || profileLoading ? (
-          <div className="min-h-screen flex items-center justify-center bg-slate-50">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          </div>
-        ) : user && profile ? (
-          <Navigate to={getDashboardPathForRole(profile.role)} replace />
-        ) : user && needsProfileSetup ? (
-          <Navigate to="/login" replace />
+        user && profile ? (
+          <Navigate to={profile.role === 'dentist' ? '/dashboard' : '/client-dashboard'} replace />
         ) : (
-          <LandingPage onGetStarted={() => navigate('/login')} />
+          <Landing onGetStarted={() => navigate('/login')} />
         )
       } />
       <Route path="/login" element={<Login />} />
@@ -82,7 +58,7 @@ function AppRoutes() {
         path="/dashboard" 
         element={
           <ProtectedRoute allowedRole="dentist">
-            <DentistDashboard />
+            <Dashboard />
           </ProtectedRoute>
         } 
       />
@@ -111,44 +87,12 @@ function AppRoutes() {
         } 
       />
       <Route 
-        path="/admin" 
-        element={
-          <ProtectedRoute allowedRole="admin">
-            <AdminDashboard />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
         path="/client-dashboard" 
         element={
           <ProtectedRoute allowedRole="client">
             <ClientDashboard />
           </ProtectedRoute>
         } 
-      />
-      <Route
-        path="/client/network"
-        element={
-          <ProtectedRoute allowedRole="client">
-            <ClientNetwork />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/client/appointments"
-        element={
-          <ProtectedRoute allowedRole="client">
-            <ClientAppointments />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/gig-studio"
-        element={
-          <ProtectedRoute allowedRole={['client', 'admin']}>
-            <GigStudio />
-          </ProtectedRoute>
-        }
       />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />

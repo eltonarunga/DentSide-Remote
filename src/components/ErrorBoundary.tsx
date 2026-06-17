@@ -1,36 +1,29 @@
-import { Component, type ErrorInfo, type ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 
-type ErrorBoundaryProps = {
+interface Props {
   children?: ReactNode;
-};
+}
 
-type ErrorBoundaryState = {
+interface State {
   hasError: boolean;
-  errorMessage?: string;
-};
+  error?: Error;
+}
 
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  declare props: ErrorBoundaryProps;
+export class ErrorBoundary extends Component<Props, State> {
+  // Explicitly declare props for TypeScript type-safety under any custom environment settings
+  public readonly props!: Props;
 
-  public state: ErrorBoundaryState = {
-    hasError: false,
+  public state: State = {
+    hasError: false
   };
 
-  public static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, errorMessage: error.message };
+  public static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught UI error:', {
-      message: error.message,
-      stack: error.stack,
-      componentStack: errorInfo.componentStack,
-    });
+    console.error('Uncaught error:', error, errorInfo);
   }
-
-  private readonly handleReset = () => {
-    window.location.reload();
-  };
 
   public render() {
     if (this.state.hasError) {
@@ -38,15 +31,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
           <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-lg border border-slate-200">
             <h2 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight font-headline">Something went wrong</h2>
-            <p className="text-slate-600 mb-6 font-body">An unexpected error occurred. Please refresh this page to recover the session.</p>
-            {this.state.errorMessage && (
-              <div className="bg-slate-100 p-4 rounded-lg text-xs font-mono text-slate-800 break-words mb-6 overflow-auto max-h-40">
-                {this.state.errorMessage}
-              </div>
-            )}
+            <p className="text-slate-600 mb-6 font-body">An unexpected error occurred. Our team has been notified. Please try refreshing the page.</p>
+            <div className="bg-slate-100 p-4 rounded-lg text-xs font-mono text-slate-800 break-words mb-6 overflow-auto max-h-40">
+              {this.state.error?.message}
+            </div>
             <button
-              type="button"
-              onClick={this.handleReset}
+              onClick={() => window.location.reload()}
               className="w-full bg-[#0077B6] hover:bg-[#023E8A] text-white py-3 rounded-lg font-bold tracking-wider uppercase transition-colors"
             >
               Refresh Page

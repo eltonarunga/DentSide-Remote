@@ -1,85 +1,61 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link } from 'react-router-dom';
-import { Search, Calendar, ArrowRight } from 'lucide-react';
-import ClientLayout from '../components/ClientLayout';
+import { useNavigate } from 'react-router-dom';
+import { LogOut, User as UserIcon, Search, Calendar } from 'lucide-react';
 
 export default function ClientDashboard() {
-  const { profile } = useAuth();
+  const { profile, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
 
   return (
-    <ClientLayout title="Client Dashboard">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="ds-page-header">
-          <p className="ds-page-eyebrow">Client Portal</p>
-          <h1 className="ds-page-title">
-            Welcome, {profile?.displayName?.split(' ')[0] || 'there'}
-          </h1>
-          <p className="ds-page-subtitle">
-            Access your appointments, find dental professionals, and manage your consultations all in one place.
-          </p>
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+      <nav className="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="bg-blue-600 p-1.5 rounded-md">
+            <UserIcon className="w-5 h-5 text-white" />
+          </div>
+          <span className="text-lg font-bold text-slate-900 tracking-tight">DentSide Client</span>
         </div>
-
-        {/* Action Cards */}
-        <div className="grid gap-6 md:grid-cols-2 mb-10">
-          {/* Find a Dentist */}
-          <Link
-            to="/client/network"
-            className="ds-card no-underline p-7 focus:outline-none focus:ring-2 focus:ring-[rgba(37,99,235,0.25)]"
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium text-slate-600 hidden sm:block">
+            {profile?.displayName || profile?.email}
+          </span>
+          <button 
+            onClick={handleLogout}
+            className="text-slate-500 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-slate-100"
+            title="Log out"
           >
-            <div className="ds-feature-icon mb-4">
-              <Search size={20} color="var(--color-blue)" />
-            </div>
-            <h2 className="text-[18px] font-semibold text-[var(--color-ink)] mb-2">
-              Find a Dentist
-            </h2>
-            <p className="text-[13px] text-[var(--color-ink-4)] leading-relaxed mb-5">
-              Search our global network of verified dental professionals for consults or freelance work.
-            </p>
-            <div className="inline-flex items-center gap-1.5 text-[13px] text-[var(--color-blue)] font-semibold">
-              Browse Network <ArrowRight size={13} />
-            </div>
-          </Link>
-
-          {/* My Appointments */}
-          <Link
-            to="/client/appointments"
-            className="ds-card no-underline p-7 focus:outline-none focus:ring-2 focus:ring-[rgba(37,99,235,0.25)]"
-          >
-            <div className="ds-feature-icon mb-4 bg-[var(--color-blue-light)]">
-              <Calendar size={20} color="var(--color-blue)" />
-            </div>
-            <h2 className="text-[18px] font-semibold text-[var(--color-ink)] mb-2">
-              My Appointments
-            </h2>
-            <p className="text-[13px] text-[var(--color-ink-4)] leading-relaxed mb-5">
-              View your upcoming teledentistry sessions and past consultation notes.
-            </p>
-            <div className="inline-flex items-center gap-1.5 text-[13px] text-[var(--color-blue)] font-semibold">
-              View Appointments <ArrowRight size={13} />
-            </div>
-          </Link>
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
+      </nav>
 
-        {/* Empty state for appointments */}
-        <div className="ds-card p-12 text-center flex flex-col items-center gap-4">
-          <Calendar
-            size={36}
-            color="var(--color-fog-3)"
-            className="mx-auto"
-          />
-          <h4 className="font-semibold text-[var(--color-ink)] mb-1.5">
-            No Upcoming Appointments
-          </h4>
-          <p className="text-[13px] text-[var(--color-ink-4)] max-w-[340px] mx-auto mb-5">
-            You don't have any teledentistry sessions scheduled. Find a dental professional to get started.
-          </p>
-          <Link to="/client/network" className="ds-btn ds-btn-primary ds-btn-sm no-underline inline-flex items-center justify-center gap-2">
-            <Search size={14} /> Find a Dentist
-          </Link>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-2xl font-bold text-slate-900 mb-8">Welcome to your Client Portal</h1>
+        
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+            <div className="bg-blue-50 w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
+              <Search className="w-6 h-6 text-blue-600" />
+            </div>
+            <h2 className="text-lg font-bold text-slate-900 mb-2">Find a Dentist</h2>
+            <p className="text-slate-600 text-sm">Search our global network of verified dental professionals for consults or freelance work.</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+            <div className="bg-teal-50 w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:bg-teal-100 transition-colors">
+              <Calendar className="w-6 h-6 text-teal-600" />
+            </div>
+            <h2 className="text-lg font-bold text-slate-900 mb-2">My Appointments</h2>
+            <p className="text-slate-600 text-sm">View your upcoming teledentistry sessions and past consultation notes.</p>
+          </div>
         </div>
-      </div>
-    </ClientLayout>
+      </main>
+    </div>
   );
 }

@@ -145,7 +145,8 @@ export default function Wallet() {
               <Link to="/dashboard" className="text-slate-500 hover:text-[#0077B6] transition-colors font-semibold text-sm">Dashboard</Link>
               <Link to="/opportunities" className="text-slate-500 hover:text-[#0077B6] transition-colors font-semibold text-sm">Gigs</Link>
               <Link to="/wallet" className="text-[#0077B6] font-semibold text-sm">Wallet</Link>
-              <Link to="/verification" className="text-slate-500 hover:text-[#0077B6] transition-colors font-semibold text-sm">Profile</Link>
+              <Link to="/profile-builder" className="text-slate-500 hover:text-[#0077B6] transition-colors font-semibold text-sm">Qualifications</Link>
+              <Link to="/verification" className="text-slate-500 hover:text-[#0077B6] transition-colors font-semibold text-sm">Verify License</Link>
             </nav>
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-slate-500 hover:bg-[#f7f9fb] p-2 rounded-full transition-colors cursor-pointer">notifications</span>

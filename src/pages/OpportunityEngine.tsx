@@ -128,7 +128,8 @@ export default function OpportunityEngine() {
           <Link to="/dashboard" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm font-label transition-colors">Dashboard</Link>
           <Link to="/opportunities" className="text-[#0077B6] font-semibold text-sm font-label transition-colors">Gigs</Link>
           <Link to="/wallet" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm font-label transition-colors">Wallet</Link>
-          <Link to="/verification" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm font-label transition-colors">Profile</Link>
+          <Link to="/profile-builder" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm font-label transition-colors">Qualifications</Link>
+          <Link to="/verification" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm font-label transition-colors">Verify License</Link>
         </nav>
         <div className="flex items-center gap-4">
           <button className="p-2 rounded-full text-[#0077B6] hover:bg-[#f7f9fb] transition-colors scale-95">

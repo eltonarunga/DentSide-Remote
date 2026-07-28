@@ -19,6 +19,15 @@ interface UserProfile {
   licenseState?: string;
   verificationSubmitted?: boolean;
   payoutChannel?: 'stripe' | 'mpesa';
+  degree?: string;
+  institution?: string;
+  graduationYear?: string;
+  specialty?: string;
+  subSpecialties?: string[];
+  phoneNumber?: string;
+  location?: string;
+  bio?: string;
+  profileCompleted?: boolean;
 }
 
 interface AuthContextType {

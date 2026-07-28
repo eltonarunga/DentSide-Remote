@@ -73,7 +73,7 @@ export default function Login() {
       
       // The onAuthStateChanged listener will eventually trigger and see the profile,
       // but to avoid delay, we can force navigation here:
-      navigate(role === 'dentist' ? '/dashboard' : '/client-dashboard');
+      navigate(role === 'dentist' ? '/profile-builder' : '/client-dashboard');
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to create profile');

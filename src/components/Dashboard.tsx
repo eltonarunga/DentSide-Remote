@@ -65,7 +65,8 @@ export default function Dashboard() {
           <Link to="/dashboard" className="font-headline font-bold tracking-tight text-[#0077B6]">Dashboard</Link>
           <Link to="/opportunities" className="font-headline font-bold tracking-tight text-slate-500 hover:bg-[#f7f9fb] transition-colors px-3 py-1 rounded-lg">Gigs</Link>
           <Link to="/wallet" className="font-headline font-bold tracking-tight text-slate-500 hover:bg-[#f7f9fb] transition-colors px-3 py-1 rounded-lg">Wallet</Link>
-          <Link to="/verification" className="font-headline font-bold tracking-tight text-slate-500 hover:bg-[#f7f9fb] transition-colors px-3 py-1 rounded-lg">Profile</Link>
+          <Link to="/profile-builder" className="font-headline font-bold tracking-tight text-slate-500 hover:bg-[#f7f9fb] transition-colors px-3 py-1 rounded-lg">Qualifications</Link>
+          <Link to="/verification" className="font-headline font-bold tracking-tight text-slate-500 hover:bg-[#f7f9fb] transition-colors px-3 py-1 rounded-lg">Verify License</Link>
         </div>
         <div className="flex items-center gap-4">
           <button 
@@ -152,9 +153,14 @@ export default function Dashboard() {
                 <p className="text-sm text-on-surface-variant leading-relaxed">Your clinical credentials are <span className="font-bold text-on-surface">40% complete</span>. Add your license to unlock gigs.</p>
               )}
             </div>
-            <Link to="/verification" className="w-full mt-6 outline outline-outline-variant/30 py-3 rounded-xl text-primary font-bold text-sm hover:bg-surface-container transition-colors text-center block">
-              {profile?.onboardingComplete ? 'VIEW LICENSE' : 'UPDATE LICENSE'}
-            </Link>
+            <div className="mt-6 flex flex-col gap-2">
+              <Link to="/profile-builder" className="w-full py-2.5 bg-[#0077B6] text-white rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-[#0077B6]/90 transition-colors text-center block shadow-xs">
+                {profile?.profileCompleted ? 'EDIT QUALIFICATIONS' : 'BUILD QUALIFICATIONS'}
+              </Link>
+              <Link to="/verification" className="w-full py-2.5 outline outline-outline-variant/30 rounded-xl text-primary font-bold text-xs uppercase tracking-wider hover:bg-surface-container transition-colors text-center block">
+                {profile?.onboardingComplete ? 'VIEW LICENSE' : 'VERIFY LICENSE'}
+              </Link>
+            </div>
           </div>
         </div>
 

@@ -39,7 +39,7 @@ export default function Landing({ onGetStarted }: LandingProps) {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-40 pb-24 overflow-hidden">
+      <section className="relative pt-48 pb-48 overflow-hidden">
         <div className="absolute inset-0 bg-primary/5"></div>
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
@@ -74,7 +74,7 @@ export default function Landing({ onGetStarted }: LandingProps) {
       </section>
 
       {/* Features Grid */}
-      <section id="features" className="py-24 bg-background relative z-10">
+      <section id="features" className="py-48 bg-background relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-extrabold font-headline mb-4">Every Opportunity, One Login</h2>
@@ -107,7 +107,7 @@ export default function Landing({ onGetStarted }: LandingProps) {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-24 bg-surface-container-lowest border-y border-outline-variant/10 relative overflow-hidden">
+      <section id="pricing" className="py-48 bg-surface-container-lowest border-y border-outline-variant/10 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-secondary-fixed/30 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="text-center mb-16">

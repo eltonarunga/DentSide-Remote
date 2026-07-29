@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [pendingRoleSelection, setPendingRoleSelection] = useState(false);
@@ -71,6 +71,9 @@ export default function Login() {
         onboardingComplete: false
       });
       
+      // Force an immediate profile refresh to keep global state in perfect alignment
+      await refreshProfile();
+
       // The onAuthStateChanged listener will eventually trigger and see the profile,
       // but to avoid delay, we can force navigation here:
       navigate(role === 'dentist' ? '/profile-builder' : '/client-dashboard');

@@ -35,26 +35,24 @@ export default function ClientDashboard() {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 page-shell">
-        <h1 className="text-2xl font-bold text-slate-900 mb-8 font-headline">Welcome to your Client Portal</h1>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-2xl font-bold text-slate-900 mb-8">Welcome to your Client Portal</h1>
         
-        {/* Bento grids across all dashboards use a uniform gap-8 (32px) */}
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Cards within those grids use p-8 (32px) internal padding */}
-          <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
-            <div className="bg-blue-50 w-12 h-12 rounded-xl flex items-center justify-center mb-6 group-hover:bg-blue-100 transition-colors text-blue-600">
-              <Search className="w-6 h-6" />
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+            <div className="bg-blue-50 w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
+              <Search className="w-6 h-6 text-blue-600" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-3 font-headline">Find a Dentist</h2>
-            <p className="text-slate-600 text-sm leading-relaxed">Search our global network of verified dental professionals for consults or freelance work.</p>
+            <h2 className="text-lg font-bold text-slate-900 mb-2">Find a Dentist</h2>
+            <p className="text-slate-600 text-sm">Search our global network of verified dental professionals for consults or freelance work.</p>
           </div>
 
-          <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
-            <div className="bg-teal-50 w-12 h-12 rounded-xl flex items-center justify-center mb-6 group-hover:bg-teal-100 transition-colors text-teal-600">
-              <Calendar className="w-6 h-6" />
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+            <div className="bg-teal-50 w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:bg-teal-100 transition-colors">
+              <Calendar className="w-6 h-6 text-teal-600" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-3 font-headline">My Appointments</h2>
-            <p className="text-slate-600 text-sm leading-relaxed">View your upcoming teledentistry sessions and past consultation notes.</p>
+            <h2 className="text-lg font-bold text-slate-900 mb-2">My Appointments</h2>
+            <p className="text-slate-600 text-sm">View your upcoming teledentistry sessions and past consultation notes.</p>
           </div>
         </div>
       </main>

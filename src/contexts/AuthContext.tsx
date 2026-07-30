@@ -36,7 +36,6 @@ interface AuthContextType {
   loading: boolean;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
-  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -45,7 +44,6 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   logout: async () => {},
   updateProfile: async () => {},
-  refreshProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -97,19 +95,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const refreshProfile = async () => {
-    if (!user) return;
-    try {
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-      if (userDoc.exists()) {
-        setProfile(userDoc.data() as UserProfile);
-      }
-    } catch (error) {
-      console.error("Error refreshing user profile:", error);
-    }
-  };
-
   const updateProfile = async (data: Partial<UserProfile>) => {
     if (!user) return;
     const userDocRef = doc(db, 'users', user.uid);
@@ -122,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, logout, updateProfile, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

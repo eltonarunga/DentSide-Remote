@@ -18,17 +18,29 @@ async function startServer() {
   app.use(express.json());
   
   app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-      ? (process.env.APP_URL ?? (() => { throw new Error('APP_URL must be set in production') })()) 
-      : '*',
+    origin: process.env.APP_URL || '*',
     methods: ['GET', 'POST']
   }));
   
-  // Basic security headers, gate CSP to prod only
+  // Basic security headers with comprehensive CSP for Firebase and Google APIs
   app.use(helmet({
-    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://apis.google.com", "https://www.gstatic.com", "https://*.firebaseapp.com", "https://*.googleapis.com", "https://*.google.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "blob:", "https:"],
+        connectSrc: ["'self'", "https://*.firebaseapp.com", "https://*.googleapis.com", "https://*.google.com", "https://*.firebaseio.com", "wss://*.firebaseio.com"],
+        frameSrc: ["'self'", "https://*.firebaseapp.com", "https://accounts.google.com"],
+        frameAncestors: ["*"],
+        workerSrc: ["'self'", "blob:"],
+      },
+    },
+    frameguard: false,
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false,
   }));
 
   // Schema Validation

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Loader2, Plus, ArrowUpRight, ArrowDownLeft, ShieldCheck, HelpCircle } from 'lucide-react';
+import { Loader2, Plus, ArrowUpRight, ArrowDownLeft, ShieldCheck, HelpCircle, RefreshCw, Stethoscope } from 'lucide-react';
 
 interface Transaction {
   id: string;
@@ -13,11 +13,13 @@ interface Transaction {
 }
 
 export default function Wallet() {
-  const { profile, updateProfile } = useAuth();
+  const { user, profile, updateProfile } = useAuth();
   const navigate = useNavigate();
 
-  const [balance, setBalance] = useState<number>(profile?.onboardingComplete ? 1250.00 : 0.00);
-  const [pending, setPending] = useState<number>(profile?.onboardingComplete ? 450.00 : 0.00);
+  const [balance, setBalance] = useState<number>(1250.00);
+  const [pending, setPending] = useState<number>(450.00);
+  const [history, setHistory] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   
   // Modals / Inputs
@@ -27,32 +29,35 @@ export default function Wallet() {
   const [addAmount, setAddAmount] = useState('');
   
   const [channel, setChannel] = useState<'stripe' | 'mpesa'>(profile?.payoutChannel || 'stripe');
-  
-  const [history, setHistory] = useState<Transaction[]>([
-    {
-      id: 'tx-101',
-      type: 'deposit',
-      amount: 850.00,
-      date: 'May 24, 2026',
-      description: 'Teledentistry Consult Settlement - DeltDent Advisory',
-      status: 'Completed',
-    },
-    {
-      id: 'tx-102',
-      type: 'deposit',
-      amount: 400.00,
-      date: 'May 20, 2026',
-      description: 'Orthodontic Treatment Plan Review',
-      status: 'Completed',
-    }
-  ]);
-
   const [isProcessing, setIsProcessing] = useState(false);
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
+
+  const userId = user?.uid || 'demo_dentist_123';
+
+  const fetchWalletData = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/wallet/${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setBalance(data.balance);
+        setPending(data.pending);
+        setHistory(data.transactions || []);
+      }
+    } catch (err) {
+      console.error('Error fetching wallet data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchWalletData();
+  }, [userId]);
 
   const handlePayoutChannelSelect = async (newChannel: 'stripe' | 'mpesa') => {
     setChannel(newChannel);
@@ -77,23 +82,33 @@ export default function Wallet() {
     }
 
     setIsProcessing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setBalance(prev => prev - amt);
-    
-    const newTx: Transaction = {
-      id: `tx-${Date.now()}`,
-      type: 'withdrawal',
-      amount: amt,
-      date: 'Today',
-      description: `Withdrawal via ${channel === 'stripe' ? 'Stripe Direct' : 'M-Pesa Mobile'}`,
-      status: 'Completed',
-    };
-    
-    setHistory(prev => [newTx, ...prev]);
-    setIsProcessing(false);
-    setShowWithdrawModal(false);
-    setWithdrawAmount('');
-    triggerToast(`Successfully processed withdrawal of $${amt.toFixed(2)}!`);
+    try {
+      const res = await fetch('/api/wallet/withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          amount: amt,
+          destination: channel === 'stripe' ? 'Stripe Connect Payout' : 'M-Pesa Mobile Payout'
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to withdraw');
+      }
+
+      const data = await res.json();
+      setBalance(data.balance);
+      setHistory(data.transactions || []);
+      setShowWithdrawModal(false);
+      setWithdrawAmount('');
+      triggerToast(`Successfully processed withdrawal of $${amt.toFixed(2)} via ${channel === 'stripe' ? 'Stripe' : 'M-Pesa'}!`);
+    } catch (err: any) {
+      triggerToast(err.message || 'Error processing withdrawal.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleAddFunds = async (e: React.FormEvent) => {
@@ -105,23 +120,33 @@ export default function Wallet() {
     }
 
     setIsProcessing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setBalance(prev => prev + amt);
-    
-    const newTx: Transaction = {
-      id: `tx-${Date.now()}`,
-      type: 'deposit',
-      amount: amt,
-      date: 'Today',
-      description: 'Direct Bank Deposit to Balance Pool',
-      status: 'Completed',
-    };
-    
-    setHistory(prev => [newTx, ...prev]);
-    setIsProcessing(false);
-    setShowAddModal(false);
-    setAddAmount('');
-    triggerToast(`Added $${amt.toFixed(2)} to your balance pool!`);
+    try {
+      const res = await fetch('/api/wallet/deposit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          amount: amt,
+          description: 'Direct Practice Escrow Settlement / Clinical Credit'
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to deposit');
+      }
+
+      const data = await res.json();
+      setBalance(data.balance);
+      setHistory(data.transactions || []);
+      setShowAddModal(false);
+      setAddAmount('');
+      triggerToast(`Added $${amt.toFixed(2)} to your balance pool!`);
+    } catch (err: any) {
+      triggerToast(err.message || 'Error processing deposit.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -144,12 +169,17 @@ export default function Wallet() {
             <nav className="hidden md:flex items-center gap-8">
               <Link to="/dashboard" className="text-slate-500 hover:text-[#0077B6] transition-colors font-semibold text-sm">Dashboard</Link>
               <Link to="/opportunities" className="text-slate-500 hover:text-[#0077B6] transition-colors font-semibold text-sm">Gigs</Link>
+              <Link to="/consultations" className="text-slate-500 hover:text-[#0077B6] transition-colors font-semibold text-sm flex items-center gap-1">
+                <Stethoscope className="w-3.5 h-3.5 text-[#0077B6]" /> Teledentistry
+              </Link>
               <Link to="/wallet" className="text-[#0077B6] font-semibold text-sm">Wallet</Link>
               <Link to="/profile-builder" className="text-slate-500 hover:text-[#0077B6] transition-colors font-semibold text-sm">Qualifications</Link>
               <Link to="/verification" className="text-slate-500 hover:text-[#0077B6] transition-colors font-semibold text-sm">Verify License</Link>
             </nav>
             <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-slate-500 hover:bg-[#f7f9fb] p-2 rounded-full transition-colors cursor-pointer">notifications</span>
+              <button onClick={fetchWalletData} className="p-2 text-slate-500 hover:bg-[#f7f9fb] rounded-full transition-colors" title="Refresh balance">
+                <RefreshCw className="w-4 h-4" />
+              </button>
               <div className="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/30">
                 <img alt="User avatar" src={profile?.photoURL || "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"} />
               </div>
@@ -173,7 +203,7 @@ export default function Wallet() {
               <div className="relative z-10">
                 <div className="flex justify-between items-start mb-10">
                   <div>
-                    <span className="text-xs uppercase tracking-widest font-bold text-slate-300 block mb-1">Available Corporate Pool</span>
+                    <span className="text-xs uppercase tracking-widest font-bold text-slate-300 block mb-1">Available Practitioner Balance</span>
                     <h2 className="text-5xl font-extrabold tracking-tighter font-headline">${balance.toFixed(2)}</h2>
                   </div>
                   <div className="bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/20">
@@ -191,7 +221,7 @@ export default function Wallet() {
                     onClick={() => setShowAddModal(true)}
                     className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all hover:bg-white/20"
                   >
-                    Add Test Funds
+                    Deposit Funds
                   </button>
                 </div>
               </div>
@@ -218,7 +248,7 @@ export default function Wallet() {
                   <span className="text-slate-500 font-semibold text-sm">Automated Settlement Route</span>
                 </div>
                 <h3 className="text-2xl font-bold text-on-surface font-headline">
-                  {channel === 'stripe' ? 'Stripe Direct' : 'M-Pesa Direct'}
+                  {channel === 'stripe' ? 'Stripe Direct' : 'M-Pesa Mobile'}
                 </h3>
               </div>
               <p className="text-xs text-on-surface-variant leading-relaxed">Direct automated clearing cycle connected securely to your registration.</p>
@@ -246,7 +276,7 @@ export default function Wallet() {
                         </div>
                         <div>
                           <p className="text-sm font-bold text-slate-800">{tx.description}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">{tx.date} • ID: {tx.id.substring(0, 8)}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{tx.date} • ID: {tx.id.substring(0, 10)}</p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -415,8 +445,8 @@ export default function Wallet() {
       {showAddModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-up">
-            <h3 className="text-xl font-bold font-headline mb-2 text-slate-800">Add Sandbox Trial Funds</h3>
-            <p className="text-xs text-slate-500 mb-6">Instantly deposit mock earnings to test the balance withdrawals and ledger history features.</p>
+            <h3 className="text-xl font-bold font-headline mb-2 text-slate-800">Add Clinical Deposit Funds</h3>
+            <p className="text-xs text-slate-500 mb-6">Deposit practice earnings, patient direct consultation payouts, or bonus escrow into your balance.</p>
             
             <form onSubmit={handleAddFunds} className="space-y-4">
               <div className="space-y-1.5">
@@ -468,15 +498,16 @@ export default function Wallet() {
           <span className="material-symbols-outlined">work_outline</span>
           <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Gigs</span>
         </Link>
+        <Link to="/consultations" className="flex flex-col items-center justify-center text-slate-400 hover:text-[#0077B6] transition-all">
+          <Stethoscope className="w-5 h-5 mb-1" />
+          <span className="font-inter text-[11px] font-semibold tracking-wide uppercase">Consults</span>
+        </Link>
         <Link to="/wallet" className="flex flex-col items-center justify-center bg-[#0077B6]/10 text-[#0077B6] rounded-xl px-4 py-1 scale-110 duration-200">
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance_wallet</span>
           <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Wallet</span>
-        </Link>
-        <Link to="/verification" className="flex flex-col items-center justify-center text-slate-400 hover:text-[#0077B6] transition-all">
-          <span className="material-symbols-outlined">person</span>
-          <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Profile</span>
         </Link>
       </nav>
     </div>
   );
 }
+

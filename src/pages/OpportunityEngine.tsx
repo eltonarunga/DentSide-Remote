@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Loader2, CheckCircle, Search, Sparkles, Filter, X } from 'lucide-react';
+import { Loader2, CheckCircle, Search, Sparkles, Filter, X, Stethoscope, RefreshCw } from 'lucide-react';
 
 interface Gig {
   id: string;
@@ -12,70 +12,85 @@ interface Gig {
   rateNum: number;
   location: string;
   tags: string[];
-  match: string;
+  match?: string;
+  description?: string;
+  requirements?: string[];
+  applicantsCount?: number;
 }
 
-const ALL_GIGS: Gig[] = [
-  {
-    id: 'gig-1',
-    title: 'Teledentistry Consultation Specialist',
-    company: 'Delta Dental Advisors',
-    type: 'Teledentistry',
-    rate: '$95/hr',
-    rateNum: 95,
-    location: 'Remote',
-    tags: ['Invisalign', 'Treatment Plan', 'Part-Time'],
-    match: '98%',
-  },
-  {
-    id: 'gig-2',
-    title: 'Dental AI Clinical Reviewer',
-    company: 'DentAI Solutions',
-    type: 'Freelance',
-    rate: '$120/hr',
-    rateNum: 120,
-    location: 'Remote',
-    tags: ['Dental AI', 'iTero Scanning', 'Flexible'],
-    match: '95%',
-  },
-  {
-    id: 'gig-3',
-    title: 'Telediagnostics Night Consult Specialist',
-    company: 'Apex Emergency Dental',
-    type: 'Teledentistry',
-    rate: '$115/hr',
-    rateNum: 115,
-    location: 'Remote',
-    tags: ['Urgent Advice', 'Radiology', 'On-Call'],
-    match: '91%',
-  },
-  {
-    id: 'gig-4',
-    title: 'Insurance Diagnostic Claims Adjuster',
-    company: 'MetLife Health Review',
-    type: 'Insurance',
-    rate: '$85/hr',
-    rateNum: 85,
-    location: 'Remote',
-    tags: ['Orthodontics', 'Claims', 'Contract'],
-    match: '88%',
-  }
-];
-
 export default function OpportunityEngine() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
 
+  const [gigs, setGigs] = useState<Gig[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('All');
   const [selectedRateLimit, setSelectedRateLimit] = useState<boolean>(false);
   const [appliedGigIds, setAppliedGigIds] = useState<string[]>([]);
   const [applyingGigId, setApplyingGigId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isAiMatching, setIsAiMatching] = useState(false);
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const fetchGigs = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/gigs');
+      if (res.ok) {
+        const data: Gig[] = await res.json();
+        setGigs(data);
+      }
+    } catch (err) {
+      console.error('Error loading gigs:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGigs();
+  }, []);
+
+  const handleRunAiMatching = async () => {
+    setIsAiMatching(true);
+    try {
+      const res = await fetch('/api/ai/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dentistProfile: {
+            specialty: profile?.specialty || 'General Dentistry',
+            licenseState: profile?.licenseState || 'California (DDS)',
+            degree: profile?.degree || 'DDS, UCSF School of Dentistry',
+            bio: profile?.bio || 'Experienced in clear aligner treatment, teledentistry, and AI radiograph reviews.'
+          },
+          gigs
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.matchedGigs && Array.isArray(data.matchedGigs)) {
+          // Merge AI match scores
+          const matchMap = new Map(data.matchedGigs.map((m: any) => [m.id, `${m.matchScore}%`]));
+          setGigs(prev => prev.map(g => ({
+            ...g,
+            match: matchMap.get(g.id) || g.match || '90%'
+          })));
+          triggerToast('AI Match scores dynamically calibrated to your dental license & skills!');
+        }
+      }
+    } catch (err) {
+      console.error('AI match error:', err);
+      triggerToast('Could not calibrate AI matching.');
+    } finally {
+      setIsAiMatching(false);
+    }
   };
 
   const handleApply = async (gigId: string, title: string) => {
@@ -85,29 +100,46 @@ export default function OpportunityEngine() {
     }
     setApplyingGigId(gigId);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const res = await fetch(`/api/gigs/${gigId}/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dentistId: user?.uid || 'demo_dentist_123',
+          dentistName: profile?.displayName || 'Dr. Sarah Jenkins, DDS',
+          dentistEmail: profile?.email || user?.email || 'sarah.jenkins@dentalside.com',
+          licenseState: profile?.licenseState || 'CA',
+          specialty: profile?.specialty || 'General Dentistry',
+          coverLetter: 'I would love to support your teledentistry and clinical review operations.'
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to apply');
+      }
+
       setAppliedGigIds(prev => [...prev, gigId]);
-      triggerToast(`Successfully applied to: ${title}!`);
-    } catch {
-      triggerToast('Unable to file application. Please retry.');
+      triggerToast(`Application submitted to: ${title}!`);
+      fetchGigs(); // update applicants count
+    } catch (err: any) {
+      triggerToast(err.message || 'Unable to file application. Please retry.');
     } finally {
       setApplyingGigId(null);
     }
   };
 
   const filteredGigs = useMemo(() => {
-    return ALL_GIGS.filter(gig => {
+    return gigs.filter(gig => {
       const matchesSearch = gig.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                             gig.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            gig.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+                            (gig.tags && gig.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
       
       const matchesType = selectedType === 'All' || gig.type === selectedType;
-      
-      const matchesRate = !selectedRateLimit || gig.rateNum >= 100;
+      const matchesRate = !selectedRateLimit || (gig.rateNum && gig.rateNum >= 100);
 
       return matchesSearch && matchesType && matchesRate;
     });
-  }, [searchQuery, selectedType, selectedRateLimit]);
+  }, [gigs, searchQuery, selectedType, selectedRateLimit]);
 
   return (
     <div className="bg-background text-on-surface font-body min-h-screen pb-24 md:pb-12 relative animate-fade-in">
@@ -124,16 +156,24 @@ export default function OpportunityEngine() {
         <div className="flex items-center gap-4">
           <Link to="/dashboard" className="text-xl font-extrabold text-[#0077B6] tracking-tighter font-headline">DentSide</Link>
         </div>
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden md:flex items-center gap-6">
           <Link to="/dashboard" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm font-label transition-colors">Dashboard</Link>
           <Link to="/opportunities" className="text-[#0077B6] font-semibold text-sm font-label transition-colors">Gigs</Link>
+          <Link to="/consultations" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm font-label transition-colors flex items-center gap-1">
+            <Stethoscope className="w-3.5 h-3.5 text-[#0077B6]" /> Teledentistry
+          </Link>
           <Link to="/wallet" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm font-label transition-colors">Wallet</Link>
           <Link to="/profile-builder" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm font-label transition-colors">Qualifications</Link>
           <Link to="/verification" className="text-slate-500 hover:text-[#0077B6] font-semibold text-sm font-label transition-colors">Verify License</Link>
         </nav>
         <div className="flex items-center gap-4">
-          <button className="p-2 rounded-full text-[#0077B6] hover:bg-[#f7f9fb] transition-colors scale-95">
-            <span className="material-symbols-outlined">notifications</span>
+          <button 
+            onClick={handleRunAiMatching}
+            disabled={isAiMatching}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-[#0077B6] rounded-xl text-xs font-bold border border-blue-200 hover:bg-blue-100 transition-colors"
+          >
+            {isAiMatching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-[#0077B6]" />}
+            AI Smart Match
           </button>
           <div className="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden">
             <img alt="User avatar" src={profile?.photoURL || "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"} />
@@ -159,9 +199,27 @@ export default function OpportunityEngine() {
         )}
 
         {/* Hero Section */}
-        <div className="mb-10">
-          <h1 className="font-headline text-4xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-2">Opportunity Engine</h1>
-          <p className="text-on-surface-variant text-lg max-w-2xl leading-relaxed">Filter, match, and instantly file credentials on state-sanctioned clinical advisor roles and corporate teledentistry programs.</p>
+        <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h1 className="font-headline text-4xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-2">Opportunity Engine</h1>
+            <p className="text-on-surface-variant text-lg max-w-2xl leading-relaxed">Filter, match, and instantly file credentials on state-sanctioned clinical advisor roles and corporate teledentistry programs.</p>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchGigs}
+              className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors"
+              title="Refresh gigs"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+            <Link
+              to="/consultations"
+              className="px-4 py-2.5 bg-[#0077B6] hover:bg-[#0077B6]/90 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-xs"
+            >
+              <Stethoscope className="w-4 h-4 text-cyan-300" /> Enter Teledentistry Hub
+            </Link>
+          </div>
         </div>
 
         {/* Dynamic Filter Section */}
@@ -187,6 +245,7 @@ export default function OpportunityEngine() {
               <option value="Teledentistry">Teledentistry</option>
               <option value="Freelance">Freelance</option>
               <option value="Insurance">Insurance</option>
+              <option value="AI Review">AI Review</option>
             </select>
 
             {/* Rate selector */}
@@ -219,7 +278,12 @@ export default function OpportunityEngine() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12">
           {/* Main Gigs List */}
           <div className="lg:col-span-8 space-y-4">
-            {filteredGigs.length > 0 ? (
+            {loading ? (
+              <div className="bg-white p-12 text-center rounded-xl border border-slate-200">
+                <Loader2 className="w-8 h-8 animate-spin text-[#0077B6] mx-auto mb-2" />
+                <p className="text-sm text-slate-500">Loading live opportunities...</p>
+              </div>
+            ) : filteredGigs.length > 0 ? (
               filteredGigs.map((gig) => {
                 const isApplied = appliedGigIds.includes(gig.id);
                 return (
@@ -228,13 +292,16 @@ export default function OpportunityEngine() {
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-[#0077B6] tracking-widest uppercase bg-[#0077B6]/5 px-2.5 py-1 rounded-md">{gig.type}</span>
                         <span className="text-xs font-bold text-teal-600 tracking-wider bg-teal-50 px-2.5 py-1 rounded-md flex items-center gap-1">
-                          <Sparkles className="w-3.5 h-3.5" /> {gig.match} Match
+                          <Sparkles className="w-3.5 h-3.5" /> {gig.match || '92%'} Match
                         </span>
                       </div>
                       <h3 className="font-bold text-xl text-slate-800 font-headline">{gig.title}</h3>
                       <p className="text-sm text-slate-500 font-medium">{gig.company} • {gig.location}</p>
+                      {gig.description && (
+                        <p className="text-xs text-slate-600 line-clamp-2 max-w-xl">{gig.description}</p>
+                      )}
                       <div className="flex flex-wrap gap-2 pt-1">
-                        {gig.tags.map((tag, i) => (
+                        {gig.tags && gig.tags.map((tag, i) => (
                           <span key={i} className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md uppercase tracking-wider">{tag}</span>
                         ))}
                       </div>
@@ -300,7 +367,7 @@ export default function OpportunityEngine() {
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div className="h-full bg-teal-500 w-[100%] rounded-full"></div>
                 </div>
-                <p className="text-xs text-slate-500 leading-relaxed">Your state licensure parameters matched 12 verified consulting groups this morning.</p>
+                <p className="text-xs text-slate-500 leading-relaxed">Your state licensure parameters matched {gigs.length} verified consulting groups this morning.</p>
               </div>
             </div>
 
@@ -328,12 +395,11 @@ export default function OpportunityEngine() {
 
             {/* Upgraded Consult Pro promo Card */}
             <div className="relative overflow-hidden rounded-xl bg-[#001D32] h-48 group shadow-lg">
-              <img alt="Consulting" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-20 group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9pgYMxzufi-afq7d2dPKd5_hv8xSLWqSnEj_DSwYT21vmrrwnXqa0CF4ufWQXUmhJ6TCSBV-kmcqTwPmAbSFS36IYsReSvYmnWUkhWS5ZUPmH7Tr13VWgffyI_dHbwvouPGp_pcqBx3gDZVxlzIeciBDIA3qX9MsR_L7W_futaLf36H9YqnRx3t-E-A9S3wu86KtYXspNXeq3D0wdplnIZk63gEhIhTmkawR61Jw8neW0EDOFaVg1r0mVw6rNhyOZj0ATIW98zvU" />
               <div className="relative h-full p-6 flex flex-col justify-end text-white">
-                <h5 className="font-headline font-bold text-lg leading-tight mb-1">Upgrade to Consult Pro</h5>
-                <p className="text-slate-300 text-xs mb-4">Priority access to high-value orthodontic consults with 24/7 client dispatch guarantees.</p>
-                <Link to="/verification" className="text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:underline">
-                  Unlock Now <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                <h5 className="font-headline font-bold text-lg leading-tight mb-1">Teledentistry Clinical Hub</h5>
+                <p className="text-slate-300 text-xs mb-4">Direct access to patient triage cases, digital intraoral scans, and AI SOAP diagnostics.</p>
+                <Link to="/consultations" className="text-cyan-300 text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:underline">
+                  Launch Clinical Hub <span className="material-symbols-outlined text-sm">arrow_forward</span>
                 </Link>
               </div>
             </div>
@@ -351,23 +417,16 @@ export default function OpportunityEngine() {
           <span className="material-symbols-outlined mb-1">work_outline</span>
           Gigs
         </Link>
+        <Link to="/consultations" className="flex flex-col items-center justify-center text-slate-400 font-inter text-[11px] font-semibold tracking-wide uppercase">
+          <Stethoscope className="w-5 h-5 mb-1" />
+          Consults
+        </Link>
         <Link to="/wallet" className="flex flex-col items-center justify-center text-slate-400 font-inter text-[11px] font-semibold tracking-wide uppercase">
           <span className="material-symbols-outlined mb-1">account_balance_wallet</span>
           Wallet
         </Link>
-        <Link to="/verification" className="flex flex-col items-center justify-center text-slate-400 font-inter text-[11px] font-semibold tracking-wide uppercase">
-          <span className="material-symbols-outlined mb-1">person</span>
-          Profile
-        </Link>
       </nav>
-
-      {/* FAB - Post New Gig */}
-      <button 
-        onClick={() => triggerToast('Gig posting is currently restricted to clinic account types.')}
-        className="fixed bottom-24 right-6 md:bottom-8 md:right-8 bg-gradient-to-br from-[#0077B6] to-[#014F86] text-white w-14 h-14 rounded-2xl shadow-xl flex items-center justify-center hover:scale-110 transition-transform active:scale-95 z-40"
-      >
-        <span className="material-symbols-outlined">post_add</span>
-      </button>
     </div>
   );
 }
+

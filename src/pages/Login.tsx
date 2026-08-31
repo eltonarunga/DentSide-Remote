@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, signInAsDemo, updateProfile } = useAuth();
   
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [pendingRoleSelection, setPendingRoleSelection] = useState(false);
@@ -26,9 +26,12 @@ export default function Login() {
     }
   }, [user, profile, authLoading, isSigningIn, pendingRoleSelection, navigate]);
 
+  const [unauthorizedDomain, setUnauthorizedDomain] = useState<string | null>(null);
+
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
     setError('');
+    setUnauthorizedDomain(null);
     
     if (!auth || !db) {
       setError("Firebase keys are missing. Please configure your .env variables to log in.");
@@ -42,7 +45,13 @@ export default function Login() {
       setPendingRoleSelection(true);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Failed to sign in');
+      if (err.code === 'auth/unauthorized-domain' || (err.message && err.message.includes('unauthorized-domain'))) {
+        const currentDomain = window.location.hostname;
+        setUnauthorizedDomain(currentDomain);
+        setError(`Firebase Auth domain unauthorized. Please add "${currentDomain}" to Authorized Domains in Firebase Console (Authentication > Settings > Authorized Domains), or use Demo Access below to continue testing.`);
+      } else {
+        setError(err.message || 'Failed to sign in');
+      }
       setPendingRoleSelection(false);
     } finally {
       setIsSigningIn(false);
@@ -54,29 +63,35 @@ export default function Login() {
     }
   };
 
+  const handleDemoSignIn = async (role: 'dentist' | 'client') => {
+    setIsSigningIn(true);
+    setError('');
+    try {
+      signInAsDemo(role);
+      navigate(role === 'dentist' ? '/profile-builder' : '/client-dashboard');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Failed to sign in as demo user');
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
   const handleRoleSelection = async (role: 'dentist' | 'client') => {
     if (!user) return;
     setIsSigningIn(true);
     setError('');
     
     try {
-      const userDocRef = doc(db, 'users', user.uid);
-      await setDoc(userDocRef, {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
+      await updateProfile({
         role: role,
-        createdAt: serverTimestamp(),
-        onboardingComplete: false
+        onboardingComplete: role === 'dentist' ? true : false,
+        profileCompleted: true
       });
-      
-      // The onAuthStateChanged listener will eventually trigger and see the profile,
-      // but to avoid delay, we can force navigation here:
-      navigate(role === 'dentist' ? '/profile-builder' : '/client-dashboard');
+      navigate(role === 'dentist' ? '/dashboard' : '/client-dashboard');
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Failed to create profile');
+      console.warn("Profile update warning:", err);
+      navigate(role === 'dentist' ? '/dashboard' : '/client-dashboard');
     } finally {
       setIsSigningIn(false);
     }
@@ -136,6 +151,32 @@ export default function Login() {
                 )}
                 Continue with Google
               </button>
+
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-slate-400 font-semibold">Instant Preview Access</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => handleDemoSignIn('dentist')}
+                  disabled={isSigningIn}
+                  className="w-full py-2.5 px-3 bg-[#0077B6] text-white rounded-lg text-xs font-bold tracking-wider uppercase hover:bg-[#0077B6]/90 transition-all shadow-xs flex items-center justify-center gap-1.5"
+                >
+                  <Stethoscope className="w-4 h-4" /> Dentist Demo
+                </button>
+                <button
+                  onClick={() => handleDemoSignIn('client')}
+                  disabled={isSigningIn}
+                  className="w-full py-2.5 px-3 bg-slate-800 text-white rounded-lg text-xs font-bold tracking-wider uppercase hover:bg-slate-700 transition-all shadow-xs flex items-center justify-center gap-1.5"
+                >
+                  <UserIcon className="w-4 h-4" /> Client Demo
+                </button>
+              </div>
               
               <div className="mt-6 text-center">
                 <button 

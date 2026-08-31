@@ -13,6 +13,7 @@ import IdentityVerification from './pages/IdentityVerification';
 import OpportunityEngine from './pages/OpportunityEngine';
 import Wallet from './pages/Wallet';
 import ProfileBuilder from './pages/ProfileBuilder';
+import ConsultationsHub from './pages/ConsultationsHub';
 import Login from './pages/Login';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
@@ -84,6 +85,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="dentist">
             <Wallet />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/consultations" 
+        element={
+          <ProtectedRoute allowedRole="dentist">
+            <ConsultationsHub />
           </ProtectedRoute>
         } 
       />

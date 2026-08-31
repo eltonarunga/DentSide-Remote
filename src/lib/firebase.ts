@@ -21,10 +21,10 @@ const firebaseConfig = {
 const app = firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null;
 export const auth = app ? getAuth(app) : null as any;
 
-// Use initializeFirestore with experimentalForceLongPolling to bypass strict proxy WebSocket blocks
+// Initialize Firestore defensively with long polling fallback
 export const db = app ? initializeFirestore(app, { 
   experimentalForceLongPolling: true 
-}, firebaseConfig.firestoreDatabaseId) : null as any;
+}) : null as any;
 
 export const googleProvider = new GoogleAuthProvider();
 

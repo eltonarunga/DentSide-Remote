@@ -64,6 +64,7 @@ export default function Dashboard() {
         <div className="hidden md:flex items-center gap-8">
           <Link to="/dashboard" className="font-headline font-bold tracking-tight text-[#0077B6]">Dashboard</Link>
           <Link to="/opportunities" className="font-headline font-bold tracking-tight text-slate-500 hover:bg-[#f7f9fb] transition-colors px-3 py-1 rounded-lg">Gigs</Link>
+          <Link to="/consultations" className="font-headline font-bold tracking-tight text-slate-500 hover:bg-[#f7f9fb] transition-colors px-3 py-1 rounded-lg">Teledentistry</Link>
           <Link to="/wallet" className="font-headline font-bold tracking-tight text-slate-500 hover:bg-[#f7f9fb] transition-colors px-3 py-1 rounded-lg">Wallet</Link>
           <Link to="/profile-builder" className="font-headline font-bold tracking-tight text-slate-500 hover:bg-[#f7f9fb] transition-colors px-3 py-1 rounded-lg">Qualifications</Link>
           <Link to="/verification" className="font-headline font-bold tracking-tight text-slate-500 hover:bg-[#f7f9fb] transition-colors px-3 py-1 rounded-lg">Verify License</Link>
@@ -239,7 +240,7 @@ export default function Dashboard() {
 
       {/* BottomNavBar (Mobile) */}
       <nav className="md:hidden fixed bottom-0 w-full z-50 rounded-t-3xl bg-white/80 backdrop-blur-xl border-t border-slate-100/10 shadow-[0px_-12px_32px_rgba(25,28,30,0.06)] flex justify-around items-center px-4 h-20 pb-safe">
-        <Link to="/dashboard" className="flex flex-col items-center justify-center bg-[#0077B6]/10 text-[#0077B6] rounded-xl px-4 py-1">
+        <Link to="/dashboard" className="flex flex-col items-center justify-center bg-[#0077B6]/10 text-[#0077B6] rounded-xl px-3 py-1">
           <span className="material-symbols-outlined">dashboard</span>
           <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Dashboard</span>
         </Link>
@@ -247,13 +248,13 @@ export default function Dashboard() {
           <span className="material-symbols-outlined">work_outline</span>
           <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Gigs</span>
         </Link>
+        <Link to="/consultations" className="flex flex-col items-center justify-center text-slate-400 hover:text-[#0077B6] transition-all">
+          <span className="material-symbols-outlined">medical_services</span>
+          <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Consults</span>
+        </Link>
         <Link to="/wallet" className="flex flex-col items-center justify-center text-slate-400 hover:text-[#0077B6] transition-all">
           <span className="material-symbols-outlined">account_balance_wallet</span>
           <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Wallet</span>
-        </Link>
-        <Link to="/verification" className="flex flex-col items-center justify-center text-slate-400 hover:text-[#0077B6] transition-all">
-          <span className="material-symbols-outlined">person</span>
-          <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Profile</span>
         </Link>
       </nav>
     </div>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0077B6"/>
+      <stop offset="100%" stop-color="#023E8A"/>
+    </linearGradient>
+    <linearGradient id="signalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#00E5FF"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#001830" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle -->
+  <rect width="64" height="64" rx="16" fill="url(#bgGrad)"/>
+
+  <!-- Sleek Tooth Silhouette -->
+  <path d="M 32 15 C 26 13 18 16 18 24 C 18 29.5 20.2 34.8 22.2 39.5 C 24 43.8 25.6 49 27.2 49 C 28.8 49 29.8 42.5 31 37.5 C 31.4 35.8 32.6 35.8 33 37.5 C 34.2 42.5 35.2 49 36.8 49 C 38.4 49 40 43.8 41.8 39.5 C 43.8 34.8 46 29.5 46 24 C 46 16 38 13 32 15 Z" 
+        fill="#FFFFFF" 
+        filter="url(#shadow)"/>
+
+  <!-- Digital / Remote Connectivity Indicator -->
+  <circle cx="46" cy="18" r="3.5" fill="url(#signalGrad)"/>
+  <path d="M 46 11 A 7 7 0 0 1 53 18" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+  <path d="M 46 7 A 11 11 0 0 1 57 18" stroke="#00E5FF" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.85"/>
+</svg>

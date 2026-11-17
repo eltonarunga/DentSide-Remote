@@ -1,35 +1,36 @@
 # DentSide Remote - Strategic Phasing & Milestones
 
-## 🟢 PHASE 1 — “Income Fast” MVP (Completed)
-**Focus:** Freelance + Non-Clinical Work (Writing, Tutoring, Consulting, Non-insurance Case reviews)
-**Why:** No licensing barriers, global reach (Kenya, US, UK, international), fast liquidity.
-- [x] Design Landing Page & Practitioner Dashboard UI
-- [x] Setup Full Stack Architecture (Express.js + Vite + React 19)
-- [x] Implement Dentist Profiles & Profile Builder (`/profile-builder`) with specialties and rates
-- [x] Build Gig Marketplace (`/opportunities`) with keyword search, category filtering, and proposal submissions
-- [x] Integrate Multi-Currency Payments & Escrow Ledger (`/wallet`) supporting M-Pesa and Stripe Connect
-- [x] Implement AI Opportunity Matchmaker (`/api/match`) using Google Gemini API
-- [x] Dental License & Identity Verification Engine (`/verification`)
-- [x] Clinic & DSO Practice Management Portal (`/client-dashboard`)
+## 🟢 PHASE 1 — Core Platform & Marketplace MVP (Completed)
+**Focus:** Practitioner onboarding, gig marketplace, multi-currency wallet ledger, and practice portal.
+- [x] Design Public Landing Page (`/`) & Role-Aware Practitioner Dashboard (`/dashboard`)
+- [x] Setup Full-Stack Architecture (Express.js `server.ts` + Vite + React 19 + TypeScript)
+- [x] Implement Authenticated API Middleware (Firebase RS256 ID token verification + signed HMAC-SHA256 demo tokens) & Role Guards
+- [x] Harden Cloud Firestore Security Rules (`firestore.rules`) & Schema Blueprint (`firebase-blueprint.json`)
+- [x] Implement Dentist Profile Builder (`/profile-builder`) with degrees, specialties, availability, and clinical bios
+- [x] Build Gig Marketplace (`/opportunities`) with search, type filtering, persistent applied status, and proposal submissions
+- [x] Integrate Multi-Currency Wallet & Escrow Ledger (`/wallet`) supporting Stripe Connect, M-Pesa payout channel, deposits, and CSV statement export
+- [x] Implement Server-Side AI Opportunity Matchmaker (`POST /api/ai/match`) using `@google/genai` (`gemini-4-hydrogen`)
+- [x] Credential & License Document Submission Flow (`/verification`) with sandbox preview workflow
+- [x] Clinic & DSO Client Portal (`/client-dashboard`) with AI gig generator, applicant drawer, dentist directory, and consult dispatch
 
 ---
 
-## 🟡 PHASE 2 — Teledentistry Layer (In Progress / Core Shipped)
-**Focus:** Second opinions, Treatment planning, Triage, and Post-op Follow-ups.
-- [x] Virtual Consultations Hub (`/consultations`) with live triage queue
-- [x] Interactive video consult room UI with device controls, chat, and call duration
-- [x] Digital Dental Radiograph / DICOM Viewer with zoom, pan, and contrast inversion
-- [x] AI-Powered SOAP Clinical Notes Generator powered by Google Gemini
-- [x] License-aware state routing & emergency triage prioritization
-- [ ] WebRTC peer mesh signaling backend for direct P2P streaming
-- [ ] Patient-facing booking and intake questionnaire widget
+## 🟡 PHASE 2 — Teledentistry Layer (Core Clinical Workbench Shipped)
+**Focus:** Second opinions, treatment planning, diagnostic scan review, and AI-assisted documentation.
+- [x] Virtual Consultations Hub (`/consultations`) with urgency & status triage filters
+- [x] Interactive Digital Dental Radiograph Viewer with zoom in/out, contrast inversion, and reset controls
+- [x] Server-Side AI Clinical Decision Support (`POST /api/ai/diagnose`) generating structured SOAP notes, CDT codes, and risk stratification via Gemini (`gemini-4-hydrogen`)
+- [x] Automatic consultation payout settlement into the practitioner wallet ledger upon diagnosis completion
+- [ ] WebRTC peer mesh signaling backend & live video/audio consult room UI
+- [ ] Automated jurisdiction license-aware state routing enforcement
+- [ ] Patient-facing booking and pre-consult intake questionnaire widget
 
 ---
 
-## 🔴 PHASE 3 — Enterprise & Insurance Layer (Upcoming)
-**Focus:** Insurance claims review, DSO partnerships, Corporate contracts, and Credential clearinghouses.
-- [ ] Dedicated Insurance Claims Review Portal with prior-authorization batch processing
-- [ ] DSO multi-location staff scheduling and contract management
-- [ ] Direct automated API integrations with State Dental Boards & NPI Registry
-- [ ] Automated Escrow disbursement via smart contracts / banking webhooks
-- [ ] Advanced Credential & Reputation Trust Layer (Peer endorsements, case reviews, dispute arbitration)
+## 🔴 PHASE 3 — Persistence, Verification APIs & Enterprise Layer (Upcoming)
+**Focus:** Production database persistence, real-time clearinghouses, insurance batch claims, and payment webhooks.
+- [ ] Migrate server in-memory preview stores (gigs, applications, consultations, wallet ledger) to persistent database storage (Cloud Firestore Admin / Cloud SQL)
+- [ ] Direct automated API integrations with State Dental Boards & NPPES NPI Registry
+- [ ] Dedicated Insurance Claims Review Portal with prior-authorization batch processing (EDI 837/835)
+- [ ] Automated Escrow settlement via Stripe Connect & Daraja M-Pesa webhooks
+- [ ] DSO multi-location staff scheduling, contract management, and dispute arbitration

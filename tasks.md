@@ -1,24 +1,25 @@
 # Tasks & Roadmap
 
-## ✅ Completed Tasks (Phase 1 & Phase 2 Core)
+## ✅ Completed Tasks
 
-- [x] **Dentist Profiles & Profile Builder**: Implemented customizable profile builder with clinical bios, hourly rates, case review fees, time zones, credentials, and specialty tagging (`/profile-builder`).
-- [x] **Gig Marketplace & Discovery Engine**: Built interactive freelance & remote opportunity marketplace with search, category filtering, proposal drawer, and gig creation modal (`/opportunities`).
-- [x] **Payments & Multi-Currency Escrow**: Integrated Stripe Connect bank payouts and East African M-Pesa mobile money support with escrow lock and release workflows (`/wallet`).
-- [x] **AI Matchmaker Service**: Deployed Gemini-powered matchmaking endpoint (`/api/match`) that computes dentist compatibility scores with rationale.
-- [x] **Teledentistry Consultations Hub**: Shipped interactive video exam room, diagnostic radiograph/DICOM viewer with invert/zoom, and automated AI SOAP clinical notes generator (`/consultations`).
-- [x] **Identity & License Verification**: Implemented multi-board license lookup, verification status badges, and credential uploads (`/verification`).
-- [x] **Practice / Client Portal**: Built dedicated workspace for dental practices and DSOs to manage postings and applicants (`/client-dashboard`).
-- [x] **Favicon & Brand Identity**: Designed and linked crisp modern SVG dental remote emblem favicon and updated app metadata.
-- [x] **Documentation Sync**: Synchronized `README.md`, `planning.md`, and `tasks.md` to reflect full-stack architecture and feature set.
+- [x] **Full-Stack Security & Auth Hardening**: Implemented Express Bearer token authentication (`requireAuth`, `requireRole`) supporting Firebase RS256 ID tokens and signed HMAC-SHA256 demo session tokens, ownership checks on wallet/consultation endpoints, and explicit `type` imports for Node `--experimental-strip-types`.
+- [x] **Firestore Schema & Rules Synchronization**: Aligned `firebase-blueprint.json`, `firestore.rules`, `src/lib/firebase.ts` (`firestoreDatabaseId` + `handleFirestoreError`), and `AuthContext.tsx` onboarding/profile sanitization (`createdAt`/`updatedAt` timestamps and bounded fields).
+- [x] **Server-Side Gemini AI Integration**: Upgraded `@google/genai` and unified `/api/ai/match`, `/api/ai/diagnose`, and `/api/ai/generate-gig` on `gemini-4-hydrogen` with structured JSON `responseSchema` outputs using server-side `GEMINI_API_KEY`.
+- [x] **Dentist Profiles & Verification Flow**: Built `/profile-builder` and `/verification` with consistent navigation, experience option alignment, and persistent profile updates.
+- [x] **Gig Marketplace & AI Matchmaker**: Aligned `/opportunities` and `POST /api/ai/match` request/response contracts, persisted applied gig state across reloads via `GET /api/gigs/applied/:dentistId`, and fixed cover note & license state submissions.
+- [x] **Multi-Currency Wallet & Ledger**: Fixed Stripe/M-Pesa withdrawal channel validation, real balance/escrow computation, transaction sign formatting across all ledger types, and CSV statement export (`/wallet`).
+- [x] **Teledentistry Consultations Hub**: Built live triage filtering, interactive radiograph zoom/contrast invert controls, and AI-assisted SOAP/CDT clinical diagnosis with automatic escrow release (`/consultations`).
+- [x] **Clinic & DSO Client Portal**: Implemented real applicant inspection (`GET /api/gigs/:id/applications`), dynamic active case escrow totals, dentist selection binding for consult dispatch, and AI gig drafting (`/client-dashboard`).
+- [x] **UI & Animation Polish**: Added missing CSS fade/slide animations in `src/index.css`, removed `window.alert` usage, and synchronized `README.md`, `planning.md`, and `tasks.md`.
+- [x] **Design System & Dual-Theme Implementation (`design.md`)**: Established authoritative `design.md` specification using the grayscale base (`#111111` / `#6B7280` / `#E5E7EB` / `#FFFFFF`) and Electric Blue (`#2563EB`) accent, wired CSS custom properties and Tailwind v4 `@theme inline` tokens in `src/index.css`, added persistent Light/Dark switching (`ThemeContext`, `ThemeToggle`), and migrated all pages and components.
 
 ---
 
-## 🚀 Active & Next-Up Tasks (Phase 2 & Phase 3 Roadmap)
+## 🚀 Active & Next-Up Tasks (Phase 2 Completion & Phase 3)
 
-- [ ] **WebRTC Live Signaling Server**: Implement WebSocket signaling in `server.ts` for live peer-to-peer audio/video streaming in consultations.
-- [ ] **Real-Time Messaging**: Add live in-app messaging between hiring clinics and dentists during gig applications and teledentistry consultations.
-- [ ] **Automated NPI / Board Lookup**: Connect live API queries to NPPES NPI Registry for instant real-time US provider verification.
-- [ ] **Insurance Review Batch Portal**: Build batch claims evaluation workbench with EDI 837/835 dental claim code parser.
-- [ ] **Automated Escrow Webhook Listeners**: Wire Stripe webhooks (`/api/webhooks/stripe`) and Daraja M-Pesa STK push callbacks for instant automated balance top-ups.
-- [ ] **PWA Offline Service Worker**: Add progressive web app service worker for offline gig bookmarking and cached radiograph viewing.
+- [ ] **Persistent Marketplace & Ledger Storage**: Replace server-side in-memory arrays (`gigsStore`, `consultationsStore`, `transactionsStore`, `applicationsStore`) with persistent database storage.
+- [ ] **WebRTC Live Signaling Server & Video Room**: Add WebSocket signaling and interactive audio/video consultation controls in `/consultations`.
+- [ ] **Real-Time Messaging**: Implement direct messaging between hiring clinics and practitioners on active gig applications and consultations.
+- [ ] **Automated NPI / State Board Lookup**: Connect live NPPES NPI Registry and dental board verification APIs in `/verification`.
+- [ ] **Insurance Review Batch Portal**: Build batch claims evaluation workbench with CDT / EDI 837/835 parsing.
+- [ ] **Payment Provider Webhooks**: Wire Stripe Connect webhooks and Daraja M-Pesa STK push callbacks for live fund settlement.

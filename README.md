@@ -1,6 +1,6 @@
 # DentSide Remote
 
-DentSide Remote is a unified, dentist-only digital platform (web + mobile app) that serves as an all-in-one remote career hub for dental professionals. Dentists sign up once, verify their licenses, set their availability, and gain instant access to diverse income streams — including teledentistry, insurance review, freelance gigs, medico-legal consulting, and corporate DSO contracts — all within a single dashboard.
+DentSide Remote is a unified, dentist-only digital platform that serves as an all-in-one remote career hub for dental professionals. Dentists sign up, submit their credentials, set their availability, and access remote clinical and non-clinical income streams — including teledentistry consultations, insurance claims auditing, AI scan annotation, clear aligner staging, and DSO contracts — alongside a dedicated portal for dental clinics and practices.
 
 ![DentSide Remote Favicon](/public/favicon.svg)
 
@@ -9,37 +9,35 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 ## Key Modules & Platform Features
 
 ### 1. Teledentistry & Consultation Hub (`/consultations`)
-- **Virtual Exam Rooms**: Simulated interactive video consultation interface with camera, audio, screen share, and session recording controls.
-- **Radiograph & DICOM Viewer**: High-contrast digital dental imaging viewer supporting bitewings, panorex, and periapical views with invert and zoom controls.
-- **AI SOAP Notes Generator**: Integrated clinical assistant powered by Gemini API that auto-synthesizes subjective symptoms, objective findings, assessment, and care plans into standardized medical SOAP notes.
-- **Triage & State-Level Routing**: Intake queue prioritizing emergencies, post-op checks, orthodontic aligner consults, and second opinions.
+- **Live Triage Queue**: Filterable case queue (`Routine`, `Urgent`, `Emergency` and status tabs) for second opinions, clear aligner staging, radiology reviews, and emergency triage.
+- **Interactive Radiograph Viewer**: High-contrast dental scan viewer with zoom in/out, contrast inversion, and reset controls.
+- **AI Clinical Decision Support (`POST /api/ai/diagnose`)**: Server-side Gemini AI (`gemini-4-hydrogen`) clinical assistant generating structured differential findings, urgency flags, recommended CDT codes, and standardized SOAP notes (Subjective, Objective, Assessment, Plan).
+- **Automated Escrow Settlement**: Submitting a finalized clinical diagnosis completes the case and credits the practitioner's wallet ledger.
 
 ### 2. Opportunity Engine & AI Matchmaker (`/opportunities`)
-- **Filterable Gig Marketplace**: Browse remote opportunities across Teledentistry, Insurance Claims Review, Medical Writing, Academic Tutoring, DSO Consulting, and Medico-Legal case review.
-- **AI Matchmaker (`/api/match`)**: Gemini-powered matchmaking endpoint analyzing practitioner profiles (experience, specialties, jurisdiction licenses) against gig requirements to compute a compatibility score and tailored rationale.
-- **Application Drawer & Gig Poster**: Practitioners can submit customized proposals with estimated turnarounds, and clinic clients can post new gigs directly.
+- **Filterable Gig Marketplace**: Browse remote opportunities across Teledentistry, Freelance, Insurance Claims Review, AI Review, and Full-Time roles.
+- **AI Matchmaker (`POST /api/ai/match`)**: Server-side Gemini AI endpoint evaluating the practitioner's profile (specialty, experience, licenses, availability) against live marketplace openings to produce ranked compatibility scores and tailored match reasons.
+- **Application Proposals**: Submit applications with jurisdiction state and custom cover notes, with applied status tracked persistently against the authenticated account.
 
 ### 3. Multi-Currency Wallet & Escrow (`/wallet`)
-- **Dual Payout Rails**: Global payment support with direct Stripe Connect bank deposits and Kenyan / East African mobile money disbursements via M-Pesa.
-- **Milestone Escrow Protection**: Client funds are held securely in escrow upon contract start and released instantly upon practitioner milestone approval.
-- **Financial Analytics**: Available balance, pending escrow funds, lifetime earnings, and downloadable statement records.
+- **Dual Payout Rails**: Supports Stripe Connect bank transfers and East African mobile money disbursements via M-Pesa.
+- **Escrow Ledger & Payouts**: Tracks available balance, pending escrow holdings, deposits, consultation payouts, and withdrawals (`POST /api/wallet/deposit`, `POST /api/wallet/withdraw`).
+- **CSV Statement Export**: One-click CSV statement download of transaction history.
 
 ### 4. Dentist Profile Builder & Credentialing (`/profile-builder`)
-- **Comprehensive Practice Profile**: Set custom clinical bios, hourly consulting rates, per-case review rates, time zones, and availability schedules.
-- **Clinical Specialization Tags**: Tagging for General Dentistry, Orthodontics, Endodontics, Periodontics, Prosthodontics, Dental Radiology, and Dental Public Health.
-- **Residency & Academic Credentials**: Track dental schools, advanced degrees (DDS, DMD, BDS, MSD), and hospital residency credentials.
+- **Comprehensive Practice Profile**: Configure academic degrees (`DDS`, `DMD`, `BDS`, `MSD`), institution, graduation year, clinical specialty tags, sub-specialties, years of experience, remote availability, and clinical bio.
 
-### 5. Identity & License Verification Engine (`/verification`)
-- **Jurisdiction & Board Clearinghouse**: Automated verification checks across state boards, National Provider Identifiers (NPI), and international councils (e.g., KMPDC).
-- **Fraud Prevention & Credential Badges**: Cryptographically-verified badges displayed on verified practitioner cards to build trust with clinics and insurance payers.
+### 5. Identity & License Verification (`/verification`)
+- **Credential & Document Filing**: Submit issuing state/board details, license numbers, and supporting license documentation.
+- **Sandbox Preview Approval**: Files verification metadata directly to the user profile for testing practitioner workflows, with automated NPPES/State Dental Board API clearinghouse integration planned for Phase 3.
 
 ### 6. Practice & Clinic Dashboard (`/client-dashboard`)
-- **Client Workspace**: Tailored portal for DSOs, private dental practices, and health-tech enterprises to manage postings, review candidates, inspect escrow status, and message verified doctors.
+- **Client Workspace**: Portal for dental practices and DSOs to publish remote gigs (including AI-assisted gig drafting via `POST /api/ai/generate-gig`), inspect submitted applicants (`GET /api/gigs/:id/applications`), browse verified practitioners, and dispatch teledentistry consultation cases with active escrow tracking.
 
-### 7. Resilient Authentication & Role-Based Access (`AuthContext`)
-- **Flexible Auth**: Support for Google OAuth and Email/Password via Firebase Authentication.
-- **One-Click Demo Profiles**: Instant testing access as either a Licensed Dentist (`Dr. Felix Jenkins, DDS`) or Dental Practice Manager (`Pacific Dental Group`).
-- **Offline Resilience**: Local session caching and graceful offline fallbacks so practitioners are never locked out during intermittent network connectivity.
+### 7. Authentication & Role-Based Access (`AuthContext`)
+- **Firebase Authentication & Cloud Firestore**: Supports Google OAuth via Firebase Auth with Cloud Firestore persistence for user profiles (`users/{uid}`) governed by `firestore.rules` and `firebase-blueprint.json`.
+- **Signed Demo Access**: One-click preview accounts for a Licensed Dentist (`Dr. Sarah Jenkins, DDS`) and Dental Practice Client (`Pacific Dental Clinic`), backed by signed HMAC-SHA256 demo session tokens when testing without Firebase keys.
+- **Role Isolation**: Route guards and backend Bearer token authentication enforce separation between practitioner (`dentist`) and practice (`client`) workflows.
 
 ---
 
@@ -47,14 +45,15 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 
 | Route | Access | Description |
 | :--- | :--- | :--- |
-| `/` | Public / Dentist | Main practitioner dashboard and performance analytics |
-| `/login` | Public | Authentication, Google Sign-in, Demo switcher, and role selection |
-| `/opportunities` | Dentist (Protected) | Gigs marketplace, AI Matchmaker, and application flow |
-| `/consultations` | Dentist (Protected) | Virtual exam rooms, DICOM viewer, and AI SOAP notes generator |
-| `/wallet` | Dentist (Protected) | Multi-currency payouts (M-Pesa / Stripe) and escrow ledger |
-| `/profile-builder` | Dentist (Protected) | Clinical bio, rates, availability, and specialty tagging |
-| `/verification` | Dentist (Protected) | License upload, NPI checks, and credential verification |
-| `/client-dashboard` | Client (Protected) | DSO / Dental clinic employer portal and candidate tracker |
+| `/` | Public | Landing page (redirects signed-in users to `/dashboard` or `/client-dashboard`) |
+| `/login` | Public | Google Sign-In, role onboarding selector, and Demo Access switcher |
+| `/dashboard` | Dentist (Protected) | Practitioner overview, metrics, availability toggle, and quick AI matching |
+| `/opportunities` | Dentist (Protected) | Gig marketplace, AI Matchmaker, and proposal submission |
+| `/consultations` | Dentist (Protected) | Triage queue, radiograph zoom/invert viewer, and AI SOAP/CDT diagnosis |
+| `/wallet` | Dentist (Protected) | Multi-currency ledger (Stripe / M-Pesa), payouts, deposits, and CSV export |
+| `/profile-builder` | Dentist (Protected) | Academic credentials, specialty tags, availability, and bio |
+| `/verification` | Dentist (Protected) | License details and credential document upload |
+| `/client-dashboard` | Client (Protected) | Practice portal for posting gigs, reviewing applicants, and creating consults |
 | `/privacy` | Public | Privacy policy and healthcare data handling disclosure |
 | `/terms` | Public | Service terms, escrow guidelines, and teledentistry compliance |
 
@@ -63,32 +62,25 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 ## Tech Stack & Architecture
 
 - **Frontend**: React 19, Vite, Tailwind CSS, Framer Motion, Lucide Icons
-- **Backend**: Express.js with Vite middleware in development (`server.ts`)
-- **AI & Intelligence**: Google Gemini API (`@google/genai`) for match scoring and clinical SOAP note generation
-- **Authentication & Database**: Firebase Auth, Cloud Firestore with defensive offline caching
-- **Styling & Design System**: Tailwind CSS utility classes, Inter and Manrope typography, medical cyan & deep blue palette (`#0077B6`, `#00B4D8`)
+- **Design System & Theming**: Grayscale structural palette (`#111111` / `#6B7280` / `#E5E7EB` / `#FFFFFF`) with Electric Blue (`#2563EB`) primary accents and Light/Dark theme switching via `ThemeContext` and `ThemeToggle` (see [`design.md`](./design.md))
+- **Backend**: Express.js (`server.ts`) with `vite.middlewares` in development and `node --experimental-strip-types server.ts` in production
+- **AI & Intelligence**: Server-side `@google/genai` (`gemini-4-hydrogen`) with structured JSON schemas for AI matching, SOAP/CDT clinical assistance, and gig drafting
+- **Authentication & Persistence**: Firebase Auth & Cloud Firestore (`users` collection) alongside server-side in-memory preview stores for marketplace gigs, applications, consultations, and wallet transactions
+- **Security**: Helmet HTTP headers, CORS, API rate limiting, Zod request validation, Bearer token middleware (Firebase RS256 ID tokens + signed demo tokens), and role checks
 
 ---
 
 ## Setup & Running Locally
 
-1. **Clone the repository**:
-   ```bash
-   git clone <repo-url>
-   cd dentside-remote
-   ```
-2. **Install dependencies**:
+1. **Install dependencies**:
    ```bash
    npm install
    ```
-3. **Environment Configuration**:
-   Create a `.env` file from `.env.example`:
-   ```bash
-   cp .env.example .env
-   ```
-   Add your `GEMINI_API_KEY` (or use the built-in BYOK modal within the app).
-
-4. **Start Development Server**:
+2. **Environment configuration**:
+   Create a `.env` file from `.env.example` and configure environment secrets:
+   - `GEMINI_API_KEY`: Required for server-side Gemini AI endpoints (configured via **Settings > Secrets** in AI Studio or `.env` locally).
+   - **Firebase Configuration**: Provisioned automatically via `firebase-applet-config.json` (with `firestore.rules` deployed to the configured Firestore database). Instant Demo Access also remains available on `/login`.
+3. **Start development server**:
    ```bash
    npm run dev
    ```
@@ -96,21 +88,22 @@ DentSide Remote is a unified, dentist-only digital platform (web + mobile app) t
 
 ---
 
-## Production Deployment
+## Production Build & Start
 
-- **Build Application**:
+- **Typecheck & Build**:
   ```bash
+  npm run lint
   npm run build
   ```
-- **Run Production Server**:
+- **Start Production Server**:
   ```bash
   npm start
   ```
-  Runs `node server.ts` which serves the Express API routes alongside the compiled Vite assets on port 3000.
+  Runs `node --experimental-strip-types server.ts` on port `3000`.
 
 ---
 
-## Security & Compliance
-- **Zero Hardcoded Secrets**: All external API keys use the Bring-Your-Own-Key (BYOK) pattern or server-side environment proxies.
-- **HIPAA / Data Handling Principles**: Protected medical health disclosures, ephemeral video room state, and strict client-side encryption awareness for clinical records.
-- **Role Isolation**: Strict route guards separating licensed dentist workflows from enterprise dental practice operations.
+## Security Notes
+- **Server-Side AI Proxy**: `GEMINI_API_KEY` is read exclusively by `server.ts` and never exposed to client bundles.
+- **Authenticated API Routes**: Protected `/api/*` endpoints require a valid `Authorization: Bearer <token>` header and verify ownership and role permissions.
+- **Firestore Rules**: `firestore.rules` and `firebase-blueprint.json` define field allowlists, immutable identity timestamps, and owner/admin checks; review and verify rules against your production requirements before deploying broadly.

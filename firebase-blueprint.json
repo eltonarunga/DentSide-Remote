@@ -2,22 +2,28 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "A user of the DentSide Remote platform, either a dentist or a client.",
+      "description": "A user of the DentSide Remote platform, either a dentist, client/clinic, or admin.",
       "type": "object",
       "properties": {
         "uid": {
           "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
           "description": "Firebase Auth UID"
         },
         "email": {
           "type": "string",
-          "format": "email"
+          "format": "email",
+          "maxLength": 256
         },
         "displayName": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 120
         },
         "photoURL": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 2048
         },
         "role": {
           "type": "string",
@@ -27,9 +33,85 @@
         "createdAt": {
           "type": "timestamp"
         },
+        "updatedAt": {
+          "type": "timestamp"
+        },
         "onboardingComplete": {
           "type": "boolean",
-          "description": "Whether the user has completed their profile setup."
+          "description": "Whether the user has completed credential verification and onboarding."
+        },
+        "profileCompleted": {
+          "type": "boolean"
+        },
+        "availableForGigs": {
+          "type": "boolean"
+        },
+        "experience": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "licenses": {
+          "type": "array",
+          "description": "Active dental license identifiers (max 20)."
+        },
+        "availability": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "interests": {
+          "type": "array",
+          "description": "Clinical interest tags (max 20)."
+        },
+        "clinicName": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "licenseNumber": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "licenseState": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "verificationSubmitted": {
+          "type": "boolean"
+        },
+        "payoutChannel": {
+          "type": "string",
+          "enum": ["stripe", "mpesa"]
+        },
+        "degree": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "institution": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "graduationYear": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "specialty": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "subSpecialties": {
+          "type": "array",
+          "description": "Verified clinical sub-specializations (max 10)."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "location": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "bio": {
+          "type": "string",
+          "maxLength": 2000
         }
       },
       "required": ["uid", "email", "role", "createdAt"]
@@ -40,7 +122,7 @@
       "schema": {
         "$ref": "#/entities/User"
       },
-      "description": "Stores user profiles."
+      "description": "Stores dentist, client, and admin user profiles (owner- and admin-isolated)."
     }
   }
 }

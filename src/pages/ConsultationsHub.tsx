@@ -1,24 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Stethoscope, 
-  Sparkles, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Clock, 
-  FileText, 
-  ChevronRight, 
-  Loader2, 
+import { Link } from 'react-router-dom';
+import {
+  Stethoscope,
+  Sparkles,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  FileText,
+  Loader2,
   ArrowLeft,
   Search,
-  Filter,
   DollarSign,
-  ShieldCheck,
   Building2,
-  Calendar,
-  X
+  ZoomIn,
+  ZoomOut,
+  Contrast,
+  RotateCcw,
 } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { BrandMark } from '../components/BrandLogo';
 
 interface ConsultationCase {
   id: string;
@@ -28,7 +29,12 @@ interface ConsultationCase {
   chiefComplaint: string;
   symptoms: string[];
   urgency: 'Routine' | 'Urgent' | 'Emergency';
-  caseType: 'Orthodontic Review' | 'Clear Aligner Staging' | 'Telediagnostic Second Opinion' | 'Radiology Review' | 'Emergency Triage';
+  caseType:
+    | 'Orthodontic Review'
+    | 'Clear Aligner Staging'
+    | 'Telediagnostic Second Opinion'
+    | 'Radiology Review'
+    | 'Emergency Triage';
   scanImageUrl?: string;
   status: 'Pending Review' | 'In Progress' | 'Completed';
   dentistId?: string;
@@ -50,17 +56,19 @@ interface ConsultationCase {
 }
 
 export default function ConsultationsHub() {
-  const { user, profile } = useAuth();
-  const navigate = useNavigate();
+  const { profile, apiFetch } = useAuth();
 
   const [cases, setCases] = useState<ConsultationCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCase, setSelectedCase] = useState<ConsultationCase | null>(null);
-  
-  // Filter states
+
   const [urgencyFilter, setUrgencyFilter] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Radiograph viewer controls
+  const [scanZoom, setScanZoom] = useState<number>(1);
+  const [invertScan, setInvertScan] = useState<boolean>(false);
 
   // Clinical SOAP Form State
   const [soapSubjective, setSoapSubjective] = useState('');
@@ -71,7 +79,6 @@ export default function ConsultationsHub() {
   const [riskLevel, setRiskLevel] = useState<'Low' | 'Moderate' | 'High'>('Moderate');
   const [clinicalNotes, setClinicalNotes] = useState('');
 
-  // AI Assist State
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const [aiReport, setAiReport] = useState<any>(null);
   const [isSubmittingDiagnosis, setIsSubmittingDiagnosis] = useState(false);
@@ -79,16 +86,18 @@ export default function ConsultationsHub() {
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
+    setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const fetchCases = async () => {
+  const fetchCases = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/consultations');
+      const res = await apiFetch('/api/consultations');
       if (res.ok) {
         const data = await res.json();
         setCases(data);
+      } else {
+        showToast('Error loading consultation queue.');
       }
     } catch (err) {
       console.error('Error fetching consultations:', err);
@@ -96,15 +105,17 @@ export default function ConsultationsHub() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiFetch]);
 
   useEffect(() => {
     fetchCases();
-  }, []);
+  }, [fetchCases]);
 
   const handleSelectCase = (c: ConsultationCase) => {
     setSelectedCase(c);
     setAiReport(null);
+    setScanZoom(1);
+    setInvertScan(false);
     if (c.clinicalDiagnosis) {
       setSoapSubjective(c.clinicalDiagnosis.soapSubjective || '');
       setSoapObjective(c.clinicalDiagnosis.soapObjective || '');
@@ -114,7 +125,9 @@ export default function ConsultationsHub() {
       setRiskLevel(c.clinicalDiagnosis.riskLevel || 'Moderate');
       setClinicalNotes(c.clinicalDiagnosis.notes || '');
     } else {
-      setSoapSubjective(`Patient ${c.patientName}, ${c.patientAge}yo ${c.patientGender}, presents with chief complaint: "${c.chiefComplaint}". Reported symptoms include ${c.symptoms.join(', ')}.`);
+      setSoapSubjective(
+        `Patient ${c.patientName}, ${c.patientAge}yo ${c.patientGender}, presents with chief complaint: "${c.chiefComplaint}". Reported symptoms include ${c.symptoms.join(', ')}.`
+      );
       setSoapObjective('Intraoral scan / radiographic findings reviewed.');
       setSoapAssessment('');
       setSoapPlan('');
@@ -128,7 +141,7 @@ export default function ConsultationsHub() {
     if (!selectedCase) return;
     setIsAiAnalyzing(true);
     try {
-      const res = await fetch('/api/ai/clinical-assist', {
+      const res = await apiFetch('/api/ai/clinical-assist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -136,12 +149,15 @@ export default function ConsultationsHub() {
           symptoms: selectedCase.symptoms,
           patientAge: selectedCase.patientAge,
           caseType: selectedCase.caseType,
-          clinicalNotes: soapSubjective
-        })
+          clinicalNotes: soapSubjective,
+        }),
       });
 
-      if (!res.ok) throw new Error('AI clinical assist failed');
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'AI clinical assist failed');
+      }
+
       setAiReport(data);
 
       if (data.soapSuggestion) {
@@ -156,7 +172,7 @@ export default function ConsultationsHub() {
       showToast('AI Clinical Decision Support recommendations generated successfully!');
     } catch (err: any) {
       console.error(err);
-      showToast('Could not generate AI diagnostic report.');
+      showToast(err.message || 'Could not generate AI diagnostic report.');
     } finally {
       setIsAiAnalyzing(false);
     }
@@ -174,14 +190,13 @@ export default function ConsultationsHub() {
     try {
       const cdtCodes = cdtCodesInput
         .split(',')
-        .map(s => s.trim())
+        .map((s) => s.trim())
         .filter(Boolean);
 
-      const res = await fetch(`/api/consultations/${selectedCase.id}/diagnose`, {
+      const res = await apiFetch(`/api/consultations/${selectedCase.id}/diagnose`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          dentistId: user?.uid || 'demo_dentist_123',
           dentistName: profile?.displayName || 'Dr. Sarah Jenkins, DDS',
           soapSubjective,
           soapObjective,
@@ -189,16 +204,15 @@ export default function ConsultationsHub() {
           soapPlan,
           cdtCodes,
           riskLevel,
-          notes: clinicalNotes
-        })
+          notes: clinicalNotes,
+        }),
       });
 
+      const responseData = await res.json();
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to submit diagnosis');
+        throw new Error(responseData.error || 'Failed to submit diagnosis');
       }
 
-      const responseData = await res.json();
       showToast(`Diagnosis submitted! $${selectedCase.fee}.00 credited to your wallet.`);
       setSelectedCase(responseData.case);
       fetchCases();
@@ -210,56 +224,65 @@ export default function ConsultationsHub() {
     }
   };
 
-  const filteredCases = cases.filter(c => {
-    const matchesSearch = c.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          c.chiefComplaint.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          c.caseType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          c.clientName.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredCases = cases.filter((c) => {
+    const matchesSearch =
+      c.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.chiefComplaint.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.caseType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.clientName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesUrgency = urgencyFilter === 'All' || c.urgency === urgencyFilter;
     const matchesStatus = statusFilter === 'All' || c.status === statusFilter;
     return matchesSearch && matchesUrgency && matchesStatus;
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col pb-24 md:pb-12">
+    <div className="min-h-screen bg-background font-body text-on-surface flex flex-col pb-24 md:pb-12">
       {/* Toast Alert */}
       {toastMessage && (
-        <div className="fixed top-5 right-5 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-in fade-in slide-in-from-top-2 duration-300 text-sm">
-          <CheckCircle2 className="w-5 h-5 text-teal-400 shrink-0" />
+        <div className="fixed top-5 right-5 z-50 bg-[#111111] dark:bg-surface-container-high text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 border border-outline-variant animate-fade-in text-sm">
+          <CheckCircle2 className="w-4 h-4 text-[#2563EB] dark:text-blue-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Top Navbar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <header className="bg-background/88 backdrop-blur-xl border-b border-outline-variant sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Link to="/dashboard" className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors">
+            <Link
+              to="/dashboard"
+              className="p-2 hover:bg-surface-container rounded-lg text-on-surface-variant hover:text-on-surface transition-colors"
+            >
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <div className="flex items-center gap-2">
-              <div className="bg-[#0077B6] p-1.5 rounded-lg text-white">
-                <Stethoscope className="w-5 h-5" />
-              </div>
+            <div className="flex items-center gap-2.5">
+              <Link to="/dashboard" className="shrink-0" aria-label="DentSide Dashboard">
+                <BrandMark size={32} />
+              </Link>
               <div>
-                <h1 className="font-bold text-slate-900 leading-tight">Teledentistry Consultations Hub</h1>
-                <p className="text-[11px] text-slate-500 font-medium">Digital Triage, Radiographic Review & AI SOAP Diagnostics</p>
+                <h1 className="font-bold font-headline text-on-surface leading-tight">
+                  Teledentistry Consultations Hub
+                </h1>
+                <p className="text-[11px] text-on-surface-variant font-medium hidden sm:block">
+                  Digital Triage · Radiographic Review · AI SOAP Diagnostics
+                </p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <Link 
+            <ThemeToggle />
+            <Link
               to="/opportunities"
-              className="text-xs font-semibold text-slate-600 hover:text-[#0077B6] px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors hidden sm:block"
+              className="text-xs font-semibold text-on-surface-variant hover:text-on-surface px-3 py-1.5 rounded-lg hover:bg-surface-container transition-colors hidden sm:block"
             >
               Browse Gigs
             </Link>
-            <Link 
+            <Link
               to="/wallet"
-              className="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold"
+              className="flex items-center gap-1.5 bg-surface-container-lowest border border-outline-variant hover:bg-surface-container text-on-surface px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
             >
-              <DollarSign className="w-3.5 h-3.5" /> Wallet
+              <DollarSign className="w-3.5 h-3.5 text-[#2563EB] dark:text-blue-400" /> Wallet
             </Link>
           </div>
         </div>
@@ -268,59 +291,76 @@ export default function ConsultationsHub() {
       {/* Main Workspace Layout */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
-          {/* Left Column: Triage Queue & Filters (5 cols) */}
+          {/* Left Column: Triage Queue & Filters */}
           <div className="lg:col-span-5 space-y-4">
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+            <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant space-y-3">
               <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                <input 
+                <Search className="w-4 h-4 text-on-surface-variant absolute left-3 top-3" />
+                <input
                   type="text"
                   placeholder="Search patient, symptoms, clinic..."
                   value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#0077B6]"
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-hidden focus:ring-2 focus:ring-[#2563EB]"
                 />
               </div>
 
               <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-                <span className="text-slate-400 font-semibold uppercase text-[10px]">Urgency:</span>
-                {['All', 'Emergency', 'Urgent', 'Routine'].map(u => (
+                <span className="text-on-surface-variant font-semibold uppercase text-[10px]">Urgency:</span>
+                {['All', 'Emergency', 'Urgent', 'Routine'].map((u) => (
                   <button
                     key={u}
                     onClick={() => setUrgencyFilter(u)}
                     className={`px-2.5 py-1 rounded-lg font-semibold transition-colors shrink-0 ${
-                      urgencyFilter === u 
-                        ? 'bg-[#0077B6] text-white' 
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      urgencyFilter === u
+                        ? 'bg-[#2563EB] text-white'
+                        : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
                     }`}
                   >
                     {u}
                   </button>
                 ))}
               </div>
+
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                <span className="text-on-surface-variant font-semibold uppercase text-[10px]">Status:</span>
+                {['All', 'Pending Review', 'In Progress', 'Completed'].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setStatusFilter(s)}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition-colors shrink-0 ${
+                      statusFilter === s
+                        ? 'bg-on-surface text-background'
+                        : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Cases Queue List */}
             <div className="space-y-3">
               <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Active Teledental Queue ({filteredCases.length})</span>
-                <span className="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Live Case Feed
+                <span className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant tabular-nums">
+                  Active Teledental Queue ({filteredCases.length})
+                </span>
+                <span className="text-[11px] font-semibold text-[#2563EB] dark:text-blue-400">
+                  Live Queue
                 </span>
               </div>
 
               {loading ? (
-                <div className="p-12 text-center bg-white rounded-2xl border border-slate-200">
-                  <Loader2 className="w-6 h-6 animate-spin text-[#0077B6] mx-auto mb-2" />
-                  <p className="text-xs text-slate-500">Loading cases...</p>
+                <div className="p-12 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant">
+                  <Loader2 className="w-6 h-6 animate-spin text-[#2563EB] mx-auto mb-2" />
+                  <p className="text-xs text-on-surface-variant">Loading cases...</p>
                 </div>
               ) : filteredCases.length === 0 ? (
-                <div className="p-8 text-center bg-white rounded-2xl border border-slate-200 text-slate-500 text-sm">
+                <div className="p-8 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant text-on-surface-variant text-sm">
                   No cases found matching your criteria.
                 </div>
               ) : (
-                filteredCases.map(c => {
+                filteredCases.map((c) => {
                   const isSelected = selectedCase?.id === c.id;
                   const isCompleted = c.status === 'Completed';
 
@@ -328,53 +368,63 @@ export default function ConsultationsHub() {
                     <div
                       key={c.id}
                       onClick={() => handleSelectCase(c)}
-                      className={`p-4 rounded-2xl border transition-all cursor-pointer bg-white ${
-                        isSelected 
-                          ? 'border-[#0077B6] ring-2 ring-[#0077B6]/20 shadow-md' 
-                          : 'border-slate-200 hover:border-slate-300 hover:shadow-xs'
+                      className={`p-4 rounded-2xl border transition-colors cursor-pointer bg-surface-container-lowest ${
+                        isSelected
+                          ? 'border-[#2563EB] ring-1 ring-[#2563EB]'
+                          : 'border-outline-variant hover:border-on-surface-variant/40'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900 text-sm">{c.patientName}</span>
-                            <span className="text-xs text-slate-400">({c.patientAge}y, {c.patientGender})</span>
+                            <span className="font-bold text-on-surface text-sm">
+                              {c.patientName}
+                            </span>
+                            <span className="text-xs text-on-surface-variant tabular-nums">
+                              ({c.patientAge}y, {c.patientGender})
+                            </span>
                           </div>
-                          <span className="text-xs font-semibold text-[#0077B6]">{c.caseType}</span>
+                          <span className="text-xs font-semibold text-[#2563EB] dark:text-blue-400">
+                            {c.caseType}
+                          </span>
                         </div>
 
                         <div className="text-right shrink-0">
-                          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                             +${c.fee}
                           </span>
                           <div className="mt-1">
-                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                              c.urgency === 'Emergency' ? 'bg-red-100 text-red-700' :
-                              c.urgency === 'Urgent' ? 'bg-amber-100 text-amber-800' :
-                              'bg-slate-100 text-slate-600'
-                            }`}>
+                            <span
+                              className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                                c.urgency === 'Emergency'
+                                  ? 'bg-red-500/15 text-red-600 dark:text-red-400'
+                                  : c.urgency === 'Urgent'
+                                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+                                  : 'bg-surface-container text-on-surface-variant'
+                              }`}
+                            >
                               {c.urgency}
                             </span>
                           </div>
                         </div>
                       </div>
 
-                      <p className="text-xs text-slate-600 line-clamp-2 mb-3 bg-slate-50 p-2 rounded-lg">
+                      <p className="text-xs text-on-surface-variant line-clamp-2 mb-3 bg-surface-container-low p-2.5 rounded-lg">
                         {c.chiefComplaint}
                       </p>
 
-                      <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-100 pt-2">
-                        <span className="flex items-center gap-1 font-medium text-slate-500">
+                      <div className="flex items-center justify-between text-[11px] text-on-surface-variant border-t border-outline-variant pt-2.5">
+                        <span className="flex items-center gap-1 font-medium">
                           <Building2 className="w-3 h-3" /> {c.clientName}
                         </span>
                         <span className="flex items-center gap-1 font-semibold">
                           {isCompleted ? (
-                            <span className="text-emerald-600 flex items-center gap-1">
+                            <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                               <CheckCircle2 className="w-3 h-3" /> Reviewed
                             </span>
                           ) : (
-                            <span className="text-[#0077B6] flex items-center gap-1">
-                              <Clock className="w-3 h-3" /> Pending Review
+                            <span className="text-[#2563EB] dark:text-blue-400 flex items-center gap-1">
+                              <Clock className="w-3 h-3" /> {c.status}
                             </span>
                           )}
                         </span>
@@ -386,128 +436,170 @@ export default function ConsultationsHub() {
             </div>
           </div>
 
-          {/* Right Column: Case Clinical Examination & SOAP Generator (7 cols) */}
+          {/* Right Column: Case Clinical Examination & SOAP Generator */}
           <div className="lg:col-span-7">
             {selectedCase ? (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
-                
-                {/* Case Header */}
-                <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-slate-200">
+              <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-6 space-y-6">
+                <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-outline-variant">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-bold text-slate-900">{selectedCase.patientName}</h2>
-                      <span className={`text-xs font-bold uppercase px-2.5 py-0.5 rounded-full ${
-                        selectedCase.urgency === 'Emergency' ? 'bg-red-100 text-red-700' :
-                        selectedCase.urgency === 'Urgent' ? 'bg-amber-100 text-amber-800' :
-                        'bg-slate-100 text-slate-600'
-                      }`}>
+                    <div className="flex items-center gap-2.5">
+                      <h2 className="text-xl font-bold font-headline text-on-surface">
+                        {selectedCase.patientName}
+                      </h2>
+                      <span
+                        className={`text-xs font-semibold uppercase px-2 py-0.5 rounded-md ${
+                          selectedCase.urgency === 'Emergency'
+                            ? 'bg-red-500/15 text-red-600 dark:text-red-400'
+                            : selectedCase.urgency === 'Urgent'
+                            ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+                            : 'bg-surface-container text-on-surface-variant'
+                        }`}
+                      >
                         {selectedCase.urgency}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Case #{selectedCase.id} • {selectedCase.caseType} • Dispatched by {selectedCase.clientName}
+                    <p className="text-xs text-on-surface-variant mt-1">
+                      Case #{selectedCase.id} · {selectedCase.caseType} · Dispatched by{' '}
+                      {selectedCase.clientName}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleRunAiClinicalAssist}
-                      disabled={isAiAnalyzing}
-                      className="px-3.5 py-2 bg-gradient-to-r from-[#0077B6] to-[#014F86] text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all flex items-center gap-2"
-                    >
-                      {isAiAnalyzing ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Sparkles className="w-4 h-4 text-cyan-300" />
-                      )}
-                      AI Clinical Decision Support
-                    </button>
-                  </div>
+                  <button
+                    onClick={handleRunAiClinicalAssist}
+                    disabled={isAiAnalyzing}
+                    className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-60 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-2"
+                  >
+                    {isAiAnalyzing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4" />
+                    )}
+                    AI Clinical Decision Support
+                  </button>
                 </div>
 
-                {/* Patient Case Overview */}
+                {/* Patient Case Overview + Interactive Scan Viewer */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Chief Complaint</h3>
-                    <p className="text-sm font-medium text-slate-800 leading-relaxed">
+                  <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant">
+                    <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">
+                      Chief Complaint
+                    </h3>
+                    <p className="text-sm font-medium text-on-surface leading-relaxed">
                       "{selectedCase.chiefComplaint}"
                     </p>
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {selectedCase.symptoms.map((s, idx) => (
-                        <span key={idx} className="bg-white border border-slate-200 px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-600">
-                          {s}
-                        </span>
-                      ))}
-                    </div>
+                    <p className="mt-3 text-xs text-on-surface-variant leading-relaxed">
+                      {selectedCase.symptoms.join(' · ')}
+                    </p>
                   </div>
 
-                  {/* Radiograph / Intraoral Image */}
-                  <div className="bg-slate-900 rounded-xl overflow-hidden relative group min-h-[140px] flex items-center justify-center">
+                  <div className="bg-[#111111] border border-[#27272A] rounded-xl overflow-hidden relative min-h-[168px] flex items-center justify-center">
                     {selectedCase.scanImageUrl ? (
-                      <img 
-                        src={selectedCase.scanImageUrl} 
+                      <img
+                        src={selectedCase.scanImageUrl}
                         alt="Dental Intraoral Scan"
-                        className="w-full h-full object-cover max-h-48 opacity-90 group-hover:opacity-100 transition-opacity" 
+                        style={{
+                          transform: `scale(${scanZoom})`,
+                          filter: invertScan ? 'invert(1) contrast(1.2)' : 'none',
+                        }}
+                        className="w-full h-48 object-cover transition-transform duration-200"
                       />
                     ) : (
-                      <div className="text-center p-6 text-slate-400">
-                        <FileText className="w-8 h-8 mx-auto mb-1 text-slate-500" />
+                      <div className="text-center p-6 text-neutral-400">
+                        <FileText className="w-8 h-8 mx-auto mb-1 text-neutral-500" />
                         <span className="text-xs font-medium">Digital Intraoral Scan Attached</span>
                       </div>
                     )}
-                    <span className="absolute bottom-2 left-2 bg-slate-900/80 text-white text-[10px] px-2 py-0.5 rounded-md backdrop-blur-xs font-semibold">
-                      Digital Radiograph #{selectedCase.id}
+                    <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/80 p-1 rounded-lg border border-white/10">
+                      <button
+                        type="button"
+                        onClick={() => setScanZoom((z) => Math.min(z + 0.25, 2.5))}
+                        className="p-1 text-white hover:text-blue-400"
+                        title="Zoom In"
+                      >
+                        <ZoomIn className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setScanZoom((z) => Math.max(z - 0.25, 1))}
+                        className="p-1 text-white hover:text-blue-400"
+                        title="Zoom Out"
+                      >
+                        <ZoomOut className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInvertScan((v) => !v)}
+                        className={`p-1 ${invertScan ? 'text-blue-400' : 'text-white'} hover:text-blue-400`}
+                        title="Invert Contrast"
+                      >
+                        <Contrast className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setScanZoom(1);
+                          setInvertScan(false);
+                        }}
+                        className="p-1 text-white hover:text-blue-400"
+                        title="Reset View"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <span className="absolute bottom-2 left-2 bg-black/80 text-white text-[10px] px-2 py-0.5 rounded-md font-mono tabular-nums">
+                      Scan #{selectedCase.id} · {Math.round(scanZoom * 100)}%
                     </span>
                   </div>
                 </div>
 
-                {/* AI Diagnostic Report Banner (if generated) */}
                 {aiReport && (
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 space-y-3">
-                    <div className="flex items-center gap-2 text-[#0077B6] font-bold text-xs">
+                  <div className="bg-primary-fixed p-4 rounded-xl border border-[#2563EB]/25 space-y-3">
+                    <div className="flex items-center gap-2 text-[#2563EB] dark:text-blue-400 font-semibold text-xs">
                       <Sparkles className="w-4 h-4" /> AI Teledentistry Diagnostic Insights
                     </div>
                     {aiReport.differentialDiagnosis && (
                       <div>
-                        <span className="text-[11px] font-bold uppercase text-slate-500">Differential Diagnoses:</span>
-                        <div className="flex flex-wrap gap-1.5 mt-1">
-                          {aiReport.differentialDiagnosis.map((d: string, i: number) => (
-                            <span key={i} className="bg-white text-indigo-900 px-2 py-0.5 rounded-md text-xs font-semibold border border-indigo-100">
-                              {d}
-                            </span>
-                          ))}
-                        </div>
+                        <span className="text-[11px] font-semibold uppercase text-on-surface-variant">
+                          Differential Diagnoses:
+                        </span>
+                        <p className="text-xs font-semibold text-on-surface mt-1">
+                          {aiReport.differentialDiagnosis.join(' · ')}
+                        </p>
                       </div>
                     )}
                     {aiReport.redFlags && aiReport.redFlags.length > 0 && (
-                      <div className="flex items-start gap-1.5 text-xs text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200">
-                        <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+                      <div className="flex items-start gap-1.5 text-xs text-amber-800 dark:text-amber-200 bg-amber-500/12 p-2.5 rounded-lg border border-amber-500/30">
+                        <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                         <div>
-                          <span className="font-bold">Clinical Red Flags:</span> {aiReport.redFlags.join(' • ')}
+                          <span className="font-bold">Clinical Red Flags:</span>{' '}
+                          {aiReport.redFlags.join(' · ')}
                         </div>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* SOAP Clinical Assessment Form */}
                 <form onSubmit={handleSubmitDiagnosis} className="space-y-4 pt-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-[#0077B6]" />
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-sm font-bold text-on-surface flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-[#2563EB] dark:text-blue-400" />
                       SOAP Clinical Notes & CDT Diagnostic Coding
                     </h3>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-500 font-medium">Risk Level:</span>
-                      {(['Low', 'Moderate', 'High'] as const).map(lvl => (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-on-surface-variant font-medium mr-1">Risk:</span>
+                      {(['Low', 'Moderate', 'High'] as const).map((lvl) => (
                         <button
                           key={lvl}
                           type="button"
                           onClick={() => setRiskLevel(lvl)}
-                          className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
-                            riskLevel === lvl 
-                              ? lvl === 'High' ? 'bg-red-600 text-white' : lvl === 'Moderate' ? 'bg-amber-600 text-white' : 'bg-emerald-600 text-white'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors ${
+                            riskLevel === lvl
+                              ? lvl === 'High'
+                                ? 'bg-red-600 text-white'
+                                : lvl === 'Moderate'
+                                ? 'bg-amber-600 text-white'
+                                : 'bg-emerald-600 text-white'
+                              : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
                           }`}
                         >
                           {lvl}
@@ -518,75 +610,88 @@ export default function ConsultationsHub() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1">S - Subjective History</label>
+                      <label className="block text-xs font-semibold text-on-surface-variant mb-1">
+                        S - Subjective History
+                      </label>
                       <textarea
                         rows={2}
                         value={soapSubjective}
-                        onChange={e => setSoapSubjective(e.target.value)}
-                        className="w-full text-xs p-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#0077B6] focus:outline-hidden"
+                        onChange={(e) => setSoapSubjective(e.target.value)}
+                        className="w-full text-xs p-2.5 border border-outline-variant rounded-xl bg-surface-container-low text-on-surface focus:bg-surface-container-lowest focus:ring-2 focus:ring-[#2563EB] focus:outline-hidden"
                         placeholder="Patient symptoms, onset, pain scale..."
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1">O - Objective Scan Findings</label>
+                      <label className="block text-xs font-semibold text-on-surface-variant mb-1">
+                        O - Objective Scan Findings
+                      </label>
                       <textarea
                         rows={2}
                         value={soapObjective}
-                        onChange={e => setSoapObjective(e.target.value)}
-                        className="w-full text-xs p-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#0077B6] focus:outline-hidden"
+                        onChange={(e) => setSoapObjective(e.target.value)}
+                        className="w-full text-xs p-2.5 border border-outline-variant rounded-xl bg-surface-container-low text-on-surface focus:bg-surface-container-lowest focus:ring-2 focus:ring-[#2563EB] focus:outline-hidden"
                         placeholder="Radiographic findings, alignment assessment..."
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1">A - Clinical Assessment / Diagnosis *</label>
+                      <label className="block text-xs font-semibold text-on-surface-variant mb-1">
+                        A - Clinical Assessment / Diagnosis *
+                      </label>
                       <textarea
                         rows={3}
                         required
                         value={soapAssessment}
-                        onChange={e => setSoapAssessment(e.target.value)}
-                        className="w-full text-xs p-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#0077B6] focus:outline-hidden"
+                        onChange={(e) => setSoapAssessment(e.target.value)}
+                        className="w-full text-xs p-2.5 border border-outline-variant rounded-xl bg-surface-container-low text-on-surface focus:bg-surface-container-lowest focus:ring-2 focus:ring-[#2563EB] focus:outline-hidden"
                         placeholder="Diagnosis (e.g. Irreversible Pulpitis, Class II Div 1 Malocclusion)..."
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1">P - Treatment Plan & Advice *</label>
+                      <label className="block text-xs font-semibold text-on-surface-variant mb-1">
+                        P - Treatment Plan & Advice *
+                      </label>
                       <textarea
                         rows={3}
                         required
                         value={soapPlan}
-                        onChange={e => setSoapPlan(e.target.value)}
-                        className="w-full text-xs p-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#0077B6] focus:outline-hidden"
+                        onChange={(e) => setSoapPlan(e.target.value)}
+                        className="w-full text-xs p-2.5 border border-outline-variant rounded-xl bg-surface-container-low text-on-surface focus:bg-surface-container-lowest focus:ring-2 focus:ring-[#2563EB] focus:outline-hidden"
                         placeholder="Recommended in-person care, staging modification, palliative meds..."
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1">CDT Billing Codes (Comma-separated)</label>
+                    <label className="block text-xs font-semibold text-on-surface-variant mb-1">
+                      CDT Billing Codes (Comma-separated)
+                    </label>
                     <input
                       type="text"
                       value={cdtCodesInput}
-                      onChange={e => setCdtCodesInput(e.target.value)}
-                      className="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#0077B6] focus:outline-hidden font-mono"
+                      onChange={(e) => setCdtCodesInput(e.target.value)}
+                      className="w-full text-xs px-3 py-2 border border-outline-variant rounded-xl bg-surface-container-low text-on-surface focus:bg-surface-container-lowest focus:ring-2 focus:ring-[#2563EB] focus:outline-hidden font-mono"
                       placeholder="D0140 (Problem-focused exam), D0220 (Periapical 1st film)"
                     />
                   </div>
 
-                  <div className="pt-2 flex items-center justify-between border-t border-slate-100">
-                    <div className="text-xs text-slate-500">
-                      Disbursement Fee: <strong className="text-emerald-700 font-bold">${selectedCase.fee}.00 USD</strong>
+                  <div className="pt-3 flex items-center justify-between border-t border-outline-variant">
+                    <div className="text-xs text-on-surface-variant">
+                      Disbursement Fee:{' '}
+                      <strong className="text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">
+                        ${selectedCase.fee}.00 USD
+                      </strong>
                     </div>
 
                     <button
                       type="submit"
                       disabled={isSubmittingDiagnosis || selectedCase.status === 'Completed'}
-                      className={`px-6 py-2.5 rounded-xl text-xs font-bold tracking-wider uppercase transition-all shadow-xs flex items-center gap-2 ${
+                      className={`px-6 py-2.5 rounded-xl text-xs font-semibold tracking-wider uppercase transition-colors flex items-center gap-2 ${
                         selectedCase.status === 'Completed'
-                          ? 'bg-emerald-100 text-emerald-800 cursor-default'
-                          : 'bg-[#0077B6] hover:bg-[#0077B6]/90 text-white active:scale-95'
+                          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 cursor-default'
+                          : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white'
                       }`}
                     >
                       {isSubmittingDiagnosis ? (
@@ -601,19 +706,19 @@ export default function ConsultationsHub() {
                     </button>
                   </div>
                 </form>
-
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
-                <Stethoscope className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <h3 className="text-base font-bold text-slate-800 mb-1">Select a Teledentistry Case</h3>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  Click on any patient file from the left queue to review clinical scans, run AI diagnostic assistance, and submit SOAP consultation notes.
+              <div className="bg-surface-container-lowest rounded-2xl border border-dashed border-outline-variant p-12 text-center">
+                <Stethoscope className="w-10 h-10 text-on-surface-variant mx-auto mb-3" />
+                <h3 className="text-base font-bold text-on-surface mb-1">
+                  Select a Teledentistry Case
+                </h3>
+                <p className="text-xs text-on-surface-variant max-w-sm mx-auto">
+                  Select a patient file from the queue to review scans, run AI diagnostic assistance, and submit SOAP consultation notes.
                 </p>
               </div>
             )}
           </div>
-
         </div>
       </main>
     </div>

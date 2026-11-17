@@ -1,63 +1,71 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithPopup } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Stethoscope, User as UserIcon, ArrowLeft, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { BrandLogo } from '../components/BrandLogo';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { user, profile, loading: authLoading, signInAsDemo, updateProfile } = useAuth();
-  
+  const {
+    user,
+    profile,
+    loading: authLoading,
+    signInAsDemo,
+    completeRoleOnboarding,
+  } = useAuth();
+
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [pendingRoleSelection, setPendingRoleSelection] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState<'login' | 'role_selection'>('login');
 
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading && user && !isSigningIn) {
       if (profile) {
-        navigate(profile.role === 'dentist' ? '/dashboard' : '/client-dashboard');
-      } else if (!isSigningIn && !pendingRoleSelection) {
+        navigate(profile.role === 'client' ? '/client-dashboard' : '/dashboard', {
+          replace: true,
+        });
+      } else {
         setStep('role_selection');
       }
     }
-  }, [user, profile, authLoading, isSigningIn, pendingRoleSelection, navigate]);
-
-  const [unauthorizedDomain, setUnauthorizedDomain] = useState<string | null>(null);
+  }, [user, profile, authLoading, isSigningIn, navigate]);
 
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
     setError('');
-    setUnauthorizedDomain(null);
-    
+
     if (!auth || !db) {
-      setError("Firebase keys are missing. Please configure your .env variables to log in.");
+      setError(
+        'Firebase keys are not configured in this environment. Use Instant Preview Access below to test DentSide Remote.'
+      );
       setIsSigningIn(false);
       return;
     }
 
+    let signInSucceeded = false;
     try {
       await signInWithPopup(auth, googleProvider);
-      // Ensure we hold the intent so the screen doesn't unexpectedly flicker upon return
-      setPendingRoleSelection(true);
+      signInSucceeded = true;
     } catch (err: any) {
       console.error(err);
-      if (err.code === 'auth/unauthorized-domain' || (err.message && err.message.includes('unauthorized-domain'))) {
+      if (
+        err.code === 'auth/unauthorized-domain' ||
+        (err.message && err.message.includes('unauthorized-domain'))
+      ) {
         const currentDomain = window.location.hostname;
-        setUnauthorizedDomain(currentDomain);
-        setError(`Firebase Auth domain unauthorized. Please add "${currentDomain}" to Authorized Domains in Firebase Console (Authentication > Settings > Authorized Domains), or use Demo Access below to continue testing.`);
+        setError(
+          `Firebase Auth domain unauthorized. Please add "${currentDomain}" to Authorized Domains in Firebase Console (Authentication > Settings > Authorized Domains), or use Demo Access below to continue.`
+        );
       } else {
         setError(err.message || 'Failed to sign in');
       }
-      setPendingRoleSelection(false);
     } finally {
       setIsSigningIn(false);
-      
-      // If we've finished the popup sign-in and no profile exists yet, manually step to role selection
-      if (!error && auth.currentUser) {
+      if (signInSucceeded && auth.currentUser && !profile) {
         setStep('role_selection');
       }
     }
@@ -67,8 +75,8 @@ export default function Login() {
     setIsSigningIn(true);
     setError('');
     try {
-      signInAsDemo(role);
-      navigate(role === 'dentist' ? '/profile-builder' : '/client-dashboard');
+      await signInAsDemo(role);
+      navigate(role === 'dentist' ? '/dashboard' : '/client-dashboard', { replace: true });
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to sign in as demo user');
@@ -81,41 +89,37 @@ export default function Login() {
     if (!user) return;
     setIsSigningIn(true);
     setError('');
-    
+
     try {
-      await updateProfile({
-        role: role,
-        onboardingComplete: role === 'dentist' ? true : false,
-        profileCompleted: true
-      });
-      navigate(role === 'dentist' ? '/dashboard' : '/client-dashboard');
+      await completeRoleOnboarding(role);
+      navigate(role === 'dentist' ? '/dashboard' : '/client-dashboard', { replace: true });
     } catch (err: any) {
-      console.warn("Profile update warning:", err);
-      navigate(role === 'dentist' ? '/dashboard' : '/client-dashboard');
+      console.error('Role onboarding error:', err);
+      setError(err.message || 'Failed to complete onboarding.');
     } finally {
       setIsSigningIn(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
+    <div className="min-h-screen bg-background text-on-surface flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-body relative">
+      <div className="fixed top-4 right-4 z-40">
+        <ThemeToggle />
+      </div>
+
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center items-center gap-2 mb-6">
-          <div className="bg-teal-600 p-2 rounded-lg">
-            <Stethoscope className="w-8 h-8 text-white" />
-          </div>
-          <span className="text-3xl font-bold text-slate-900 tracking-tight">DentSide</span>
+        <div className="flex justify-center mb-5">
+          <BrandLogo to="/" size={40} textClassName="text-2xl" />
         </div>
-        <h2 className="mt-2 text-center text-3xl font-extrabold text-slate-900">
+        <h2 className="text-center text-2xl sm:text-3xl font-extrabold font-headline text-on-surface tracking-tight">
           {step === 'login' ? 'Sign in to your account' : 'Choose your account type'}
         </h2>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-slate-200">
-          
+        <div className="bg-surface-container-lowest py-8 px-6 sm:px-10 rounded-2xl border border-outline-variant">
           {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+            <div className="mb-5 bg-error-container border border-error/30 text-error px-4 py-3 rounded-xl text-sm">
               {error}
             </div>
           )}
@@ -125,10 +129,10 @@ export default function Login() {
               <button
                 onClick={handleGoogleSignIn}
                 disabled={isSigningIn || authLoading}
-                className="w-full flex justify-center items-center gap-3 py-3 px-4 border border-slate-300 rounded-md shadow-sm bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 transition-colors"
+                className="w-full flex justify-center items-center gap-3 py-3 px-4 border border-outline-variant rounded-xl bg-surface-container-lowest text-sm font-semibold text-on-surface hover:bg-surface-container disabled:opacity-50 transition-colors"
               >
-                {(isSigningIn || authLoading) ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+                {isSigningIn || authLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-on-surface-variant" />
                 ) : (
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path
@@ -154,10 +158,12 @@ export default function Login() {
 
               <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200" />
+                  <div className="w-full border-t border-outline-variant" />
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-slate-400 font-semibold">Instant Preview Access</span>
+                <div className="relative flex justify-center text-xs uppercase tracking-wider">
+                  <span className="bg-surface-container-lowest px-3 text-on-surface-variant font-semibold">
+                    Instant Preview Access
+                  </span>
                 </div>
               </div>
 
@@ -165,23 +171,23 @@ export default function Login() {
                 <button
                   onClick={() => handleDemoSignIn('dentist')}
                   disabled={isSigningIn}
-                  className="w-full py-2.5 px-3 bg-[#0077B6] text-white rounded-lg text-xs font-bold tracking-wider uppercase hover:bg-[#0077B6]/90 transition-all shadow-xs flex items-center justify-center gap-1.5"
+                  className="w-full py-2.5 px-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
                 >
                   <Stethoscope className="w-4 h-4" /> Dentist Demo
                 </button>
                 <button
                   onClick={() => handleDemoSignIn('client')}
                   disabled={isSigningIn}
-                  className="w-full py-2.5 px-3 bg-slate-800 text-white rounded-lg text-xs font-bold tracking-wider uppercase hover:bg-slate-700 transition-all shadow-xs flex items-center justify-center gap-1.5"
+                  className="w-full py-2.5 px-3 bg-on-surface text-background hover:opacity-90 rounded-xl text-xs font-semibold transition-opacity flex items-center justify-center gap-1.5"
                 >
                   <UserIcon className="w-4 h-4" /> Client Demo
                 </button>
               </div>
-              
+
               <div className="mt-6 text-center">
-                <button 
+                <button
                   onClick={() => navigate('/')}
-                  className="text-sm text-teal-600 hover:text-teal-500 font-medium inline-flex items-center"
+                  className="text-sm text-[#2563EB] dark:text-blue-400 hover:underline font-medium inline-flex items-center"
                 >
                   <ArrowLeft className="w-4 h-4 mr-1" /> Back to home
                 </button>
@@ -190,51 +196,54 @@ export default function Login() {
           )}
 
           {step === 'role_selection' && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="space-y-4"
             >
-              <p className="text-sm text-slate-500 text-center mb-6">
-                Welcome! Please tell us how you'll be using DentSide Remote.
+              <p className="text-sm text-on-surface-variant text-center mb-6">
+                Welcome! Choose how you will use DentSide Remote.
               </p>
-              
+
               <button
                 onClick={() => handleRoleSelection('dentist')}
                 disabled={isSigningIn}
-                className="w-full flex items-center p-4 border-2 border-slate-200 rounded-xl hover:border-teal-500 hover:bg-teal-50 transition-all text-left group"
+                className="w-full flex items-center p-4 border border-outline-variant rounded-xl hover:border-[#2563EB] hover:bg-primary-fixed/60 transition-colors text-left group"
               >
-                <div className="bg-teal-100 p-3 rounded-lg group-hover:bg-teal-200 transition-colors">
-                  <Stethoscope className="w-6 h-6 text-teal-700" />
+                <div className="bg-primary-fixed p-3 rounded-xl text-[#2563EB] dark:text-blue-400">
+                  <Stethoscope className="w-5 h-5" />
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-lg font-bold text-slate-900">I'm a Dentist</h3>
-                  <p className="text-sm text-slate-500">I want to find remote gigs and consults.</p>
+                  <h3 className="text-base font-bold text-on-surface">I'm a Dentist</h3>
+                  <p className="text-sm text-on-surface-variant">
+                    Find remote gigs, AI scan reviews, and teledental consults.
+                  </p>
                 </div>
               </button>
 
               <button
                 onClick={() => handleRoleSelection('client')}
                 disabled={isSigningIn}
-                className="w-full flex items-center p-4 border-2 border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-left group"
+                className="w-full flex items-center p-4 border border-outline-variant rounded-xl hover:border-[#2563EB] hover:bg-primary-fixed/60 transition-colors text-left group"
               >
-                <div className="bg-blue-100 p-3 rounded-lg group-hover:bg-blue-200 transition-colors">
-                  <UserIcon className="w-6 h-6 text-blue-700" />
+                <div className="bg-surface-container p-3 rounded-xl text-on-surface">
+                  <UserIcon className="w-5 h-5" />
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-lg font-bold text-slate-900">I'm a Client / Patient</h3>
-                  <p className="text-sm text-slate-500">I need dental advice or want to hire a dentist.</p>
+                  <h3 className="text-base font-bold text-on-surface">I'm a Client / Clinic</h3>
+                  <p className="text-sm text-on-surface-variant">
+                    Hire verified dentists and dispatch teledentistry cases.
+                  </p>
                 </div>
               </button>
-              
+
               {isSigningIn && (
                 <div className="flex justify-center mt-4">
-                  <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
+                  <Loader2 className="w-6 h-6 animate-spin text-[#2563EB]" />
                 </div>
               )}
             </motion.div>
           )}
-
         </div>
       </div>
     </div>

@@ -2,63 +2,60 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: users
-    // Document ID: {userId}
-    // Fields:
-    //   - uid: string (required) - Firebase Auth UID
-    //   - email: string (required) - User email
-    //   - displayName: string (optional) - User display name
-    //   - photoURL: string (optional) - User photo URL
-    //   - role: string (required) - 'dentist', 'client', or 'admin'
-    //   - createdAt: timestamp (required) - Creation time
-    //   - onboardingComplete: boolean (optional) - Onboarding status
-    //
-    // ===============================================================
+
+    // Global Safety Net: Default-deny all unmatched paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
 
     // ===============================================================
     // Helper Functions
     // ===============================================================
-    
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
+    function isVerifiedUser() {
+      return isAuthenticated() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-    
+
     function isAdmin() {
-      return isAuthenticated() && 
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      return isVerifiedUser() && (
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        ) ||
+        request.auth.token.email == 'eltonarunga@gmail.com'
+      );
     }
-    
-    function hasRequiredFields(fields) {
-      return request.resource.data.keys().hasAll(fields);
-    }
-    
-    function hasOnlyAllowedFields(fields) {
-      return request.resource.data.keys().hasOnly(fields);
-    }
-    
-    function uidUnchanged() {
-      return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
-    }
-    
-    function uidNotModified() {
-      return !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
-    }
-    
+
     function isValidEmail(email) {
-      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+      return email is string && email.size() <= 256 && email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
     }
 
     function isValidRole(role) {
       return role in ['dentist', 'client', 'admin'];
+    }
+
+    function isBoundedStringList(arr, maxLen) {
+      return arr is list && arr.size() <= maxLen && (arr.size() == 0 || (arr[0] is string && arr[0].size() <= 120));
     }
 
     // ===============================================================
@@ -66,41 +63,82 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasRequiredFields(['uid', 'email', 'role', 'createdAt']) &&
-             hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'role', 'createdAt', 'onboardingComplete']) &&
-             data.uid is string && data.uid.size() > 0 && data.uid.size() < 128 &&
-             isValidEmail(data.email) && data.email.size() < 256 &&
-             (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
-             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() < 2048)) &&
+      return data.keys().hasAll(['uid', 'email', 'role', 'createdAt']) &&
+             data.keys().hasOnly([
+               'uid', 'email', 'displayName', 'photoURL', 'role', 'createdAt', 'updatedAt',
+               'onboardingComplete', 'profileCompleted', 'availableForGigs',
+               'experience', 'licenses', 'availability', 'interests', 'clinicName',
+               'licenseNumber', 'licenseState', 'verificationSubmitted', 'payoutChannel',
+               'degree', 'institution', 'graduationYear', 'specialty', 'subSpecialties',
+               'phoneNumber', 'location', 'bio'
+             ]) &&
+             isValidId(data.uid) &&
+             isValidEmail(data.email) &&
              isValidRole(data.role) &&
-             (data.createdAt is timestamp || data.createdAt == request.time) &&
-             (!('onboardingComplete' in data) || data.onboardingComplete is bool);
+             data.createdAt is timestamp &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp) &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 120)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 2048)) &&
+             (!('onboardingComplete' in data) || data.onboardingComplete is bool) &&
+             (!('profileCompleted' in data) || data.profileCompleted is bool) &&
+             (!('availableForGigs' in data) || data.availableForGigs is bool) &&
+             (!('experience' in data) || (data.experience is string && data.experience.size() <= 64)) &&
+             (!('licenses' in data) || isBoundedStringList(data.licenses, 20)) &&
+             (!('availability' in data) || (data.availability is string && data.availability.size() <= 100)) &&
+             (!('interests' in data) || isBoundedStringList(data.interests, 20)) &&
+             (!('clinicName' in data) || (data.clinicName is string && data.clinicName.size() <= 150)) &&
+             (!('licenseNumber' in data) || (data.licenseNumber is string && data.licenseNumber.size() <= 64)) &&
+             (!('licenseState' in data) || (data.licenseState is string && data.licenseState.size() <= 64)) &&
+             (!('verificationSubmitted' in data) || data.verificationSubmitted is bool) &&
+             (!('payoutChannel' in data) || data.payoutChannel in ['stripe', 'mpesa']) &&
+             (!('degree' in data) || (data.degree is string && data.degree.size() <= 120)) &&
+             (!('institution' in data) || (data.institution is string && data.institution.size() <= 150)) &&
+             (!('graduationYear' in data) || (data.graduationYear is string && data.graduationYear.size() <= 16)) &&
+             (!('specialty' in data) || (data.specialty is string && data.specialty.size() <= 120)) &&
+             (!('subSpecialties' in data) || isBoundedStringList(data.subSpecialties, 10)) &&
+             (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() <= 40)) &&
+             (!('location' in data) || (data.location is string && data.location.size() <= 120)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 2000));
     }
 
     // ===============================================================
-    // Rules
+    // Collection Rules
     // ===============================================================
 
     match /users/{userId} {
-      // Users can read their own profile. Admins can read all.
-      allow read: if isOwner(userId) || isAdmin();
-      
-      // Users can create their own profile. They cannot create an admin role unless they are already an admin.
-      allow create: if isAuthenticated() && 
-                    isOwner(userId) && 
-                    isValidUser(request.resource.data) && 
-                    uidUnchanged() &&
-                    (request.resource.data.role in ['dentist', 'client'] || isAdmin());
-                    
-      // Users can update their own profile. They cannot change their role to admin, and cannot change uid or createdAt.
-      allow update: if isAuthenticated() && 
-                    isOwner(userId) && 
-                    isValidUser(request.resource.data) && 
-                    uidNotModified() &&
-                    request.resource.data.createdAt == resource.data.createdAt &&
-                    (request.resource.data.role == resource.data.role || isAdmin());
-                    
-      allow delete: if isAdmin();
+      // PII isolation: Users can only read their own profile; admins can read/list all.
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+
+      // Users can create their own profile with server timestamp and non-admin role.
+      allow create: if isVerifiedUser() &&
+                    isValidId(userId) &&
+                    isOwner(userId) &&
+                    isValidUser(incoming()) &&
+                    incoming().uid == request.auth.uid &&
+                    incoming().createdAt == request.time &&
+                    (incoming().role in ['dentist', 'client'] || isAdmin());
+
+      // Users can update non-immutable fields; role escalation and uid/createdAt changes are blocked.
+      allow update: if isVerifiedUser() &&
+                    isValidId(userId) &&
+                    (isOwner(userId) || isAdmin()) &&
+                    isValidUser(incoming()) &&
+                    incoming().uid == existing().uid &&
+                    incoming().createdAt == existing().createdAt &&
+                    (incoming().role == existing().role || isAdmin()) &&
+                    (
+                      isAdmin() ||
+                      incoming().diff(existing()).affectedKeys().hasOnly([
+                        'displayName', 'photoURL', 'onboardingComplete', 'profileCompleted',
+                        'availableForGigs', 'experience', 'licenses', 'availability', 'interests',
+                        'clinicName', 'licenseNumber', 'licenseState', 'verificationSubmitted',
+                        'payoutChannel', 'degree', 'institution', 'graduationYear', 'specialty',
+                        'subSpecialties', 'phoneNumber', 'location', 'bio', 'updatedAt'
+                      ])
+                    );
+
+      allow delete: if isValidId(userId) && isAdmin();
     }
   }
 }

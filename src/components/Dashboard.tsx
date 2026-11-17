@@ -1,54 +1,132 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
+import { BrandLogo } from './BrandLogo';
+
+interface AiMatchResult {
+  gigId?: string;
+  title: string;
+  company: string;
+  type: string;
+  rate: string;
+  match: string;
+  tags: string[];
+  rationale?: string;
+}
+
+interface ActiveConsultation {
+  id: string;
+  patientName: string;
+  caseType: string;
+  urgency: string;
+  status: string;
+  fee: number;
+}
 
 export default function Dashboard() {
-  const { profile, logout } = useAuth();
+  const { user, profile, logout, updateProfile, apiFetch } = useAuth();
   const navigate = useNavigate();
-  
-  // BYOK State - strictly memory bound 
-  const [apiKey, setApiKey] = useState('');
-  const [isMatching, setIsMatching] = useState(false);
-  const [matches, setMatches] = useState<any[]>([]);
 
-  const handleApiKeyChange = (key: string) => {
-    setApiKey(key);
+  const [isMatching, setIsMatching] = useState(false);
+  const [matches, setMatches] = useState<AiMatchResult[]>([]);
+  const [matchError, setMatchError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const [balance, setBalance] = useState<number>(0);
+  const [completedConsults, setCompletedConsults] = useState<number>(0);
+  const [activeConsults, setActiveConsults] = useState<ActiveConsultation[]>([]);
+  const [appliedCount, setAppliedCount] = useState<number>(0);
+  const [statsLoading, setStatsLoading] = useState<boolean>(true);
+
+  const isAvailable = profile?.availableForGigs ?? true;
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const loadDashboardMetrics = useCallback(async () => {
+    if (!user?.uid) return;
+    setStatsLoading(true);
+    try {
+      const [walletRes, consultsRes, appliedRes] = await Promise.all([
+        apiFetch(`/api/wallet/${user.uid}`),
+        apiFetch('/api/consultations'),
+        apiFetch(`/api/gigs/applied/${user.uid}`),
+      ]);
+
+      if (walletRes.ok) {
+        const walletData = await walletRes.json();
+        setBalance(typeof walletData.balance === 'number' ? walletData.balance : 0);
+      }
+      if (consultsRes.ok) {
+        const consultsData: ActiveConsultation[] = await consultsRes.json();
+        setCompletedConsults(consultsData.filter((c) => c.status === 'Completed').length);
+        setActiveConsults(consultsData.filter((c) => c.status !== 'Completed'));
+      }
+      if (appliedRes.ok) {
+        const appliedData = await appliedRes.json();
+        setAppliedCount(Array.isArray(appliedData) ? appliedData.length : 0);
+      }
+    } catch (err) {
+      console.error('Failed to load dashboard metrics:', err);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [apiFetch, user?.uid]);
+
+  useEffect(() => {
+    loadDashboardMetrics();
+  }, [loadDashboardMetrics]);
+
+  const handleToggleAvailability = async () => {
+    try {
+      const next = !isAvailable;
+      await updateProfile({ availableForGigs: next });
+      showToast(next ? 'Status updated: Available for remote gigs' : 'Status updated: Paused');
+    } catch {
+      showToast('Could not update availability status.');
+    }
   };
 
   const handleAIMatch = async () => {
-    if (!apiKey) {
-      alert("Please enter your Gemini API Key first.");
-      return;
-    }
-    
     setIsMatching(true);
+    setMatchError(null);
     try {
-      const response = await fetch('/api/match', {
+      const response = await apiFetch('/api/ai/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          apiKey,
           profile: {
-            experience: profile?.experience || "General Dental Practitioner",
-            licenses: profile?.licenses || ["Pending License Review"],
-            availability: profile?.availability || "Open",
-            interests: profile?.interests || ["General Consulting", "Teledentistry"]
-          }
-        })
+            displayName: profile?.displayName,
+            degree: profile?.degree,
+            institution: profile?.institution,
+            experience: profile?.experience || 'General Dental Practitioner',
+            specialty: profile?.specialty || 'General Dentistry',
+            subSpecialties: profile?.subSpecialties || [],
+            licenseState: profile?.licenseState || 'California',
+            licenses: profile?.licenses || (profile?.licenseNumber ? [profile.licenseNumber] : []),
+            availability: profile?.availability || 'Open',
+            interests: profile?.interests || ['General Consulting', 'Teledentistry'],
+            bio: profile?.bio,
+          },
+        }),
       });
-      
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Failed to fetch matches');
-      }
-      
+
       const data = await response.json();
-      if (Array.isArray(data) && data.length > 0) {
-        setMatches(data);
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch AI matches');
+      }
+
+      const list = Array.isArray(data.matches) ? data.matches : Array.isArray(data) ? data : [];
+      setMatches(list);
+      if (list.length > 0) {
+        showToast(`Found ${list.length} personalized AI gig matches!`);
       }
     } catch (error: any) {
-      alert(error.message);
+      setMatchError(error.message || 'Unable to reach AI Matchmaker.');
     } finally {
       setIsMatching(false);
     }
@@ -56,34 +134,74 @@ export default function Dashboard() {
 
   return (
     <div className="text-on-surface bg-background min-h-screen font-body">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-20 right-6 z-50 bg-[#111111] dark:bg-surface-container-high text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 border border-outline-variant animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 text-[#2563EB] dark:text-blue-400 shrink-0" />
+          <p className="text-xs font-semibold tracking-tight">{toastMessage}</p>
+        </div>
+      )}
+
       {/* TopAppBar */}
-      <header className="fixed top-0 w-full z-50 bg-[#f7f9fb]/80 backdrop-blur-xl shadow-sm flex justify-between items-center px-6 h-16">
+      <header className="fixed top-0 w-full z-50 bg-background/88 backdrop-blur-xl border-b border-outline-variant flex justify-between items-center px-6 h-16">
         <div className="flex items-center gap-3">
-          <span className="text-xl font-extrabold text-[#0077B6] tracking-tighter font-headline">DentSide</span>
+          <BrandLogo to="/dashboard" size={30} />
         </div>
-        <div className="hidden md:flex items-center gap-8">
-          <Link to="/dashboard" className="font-headline font-bold tracking-tight text-[#0077B6]">Dashboard</Link>
-          <Link to="/opportunities" className="font-headline font-bold tracking-tight text-slate-500 hover:bg-[#f7f9fb] transition-colors px-3 py-1 rounded-lg">Gigs</Link>
-          <Link to="/consultations" className="font-headline font-bold tracking-tight text-slate-500 hover:bg-[#f7f9fb] transition-colors px-3 py-1 rounded-lg">Teledentistry</Link>
-          <Link to="/wallet" className="font-headline font-bold tracking-tight text-slate-500 hover:bg-[#f7f9fb] transition-colors px-3 py-1 rounded-lg">Wallet</Link>
-          <Link to="/profile-builder" className="font-headline font-bold tracking-tight text-slate-500 hover:bg-[#f7f9fb] transition-colors px-3 py-1 rounded-lg">Qualifications</Link>
-          <Link to="/verification" className="font-headline font-bold tracking-tight text-slate-500 hover:bg-[#f7f9fb] transition-colors px-3 py-1 rounded-lg">Verify License</Link>
+        <div className="hidden md:flex items-center gap-6">
+          <Link
+            to="/dashboard"
+            className="text-sm font-semibold text-[#2563EB] dark:text-blue-400 whitespace-nowrap"
+          >
+            Dashboard
+          </Link>
+          <Link
+            to="/opportunities"
+            className="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors px-2 py-1 rounded-lg whitespace-nowrap"
+          >
+            Gigs
+          </Link>
+          <Link
+            to="/consultations"
+            className="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors px-2 py-1 rounded-lg whitespace-nowrap"
+          >
+            Teledentistry
+          </Link>
+          <Link
+            to="/wallet"
+            className="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors px-2 py-1 rounded-lg whitespace-nowrap"
+          >
+            Wallet
+          </Link>
+          <Link
+            to="/profile-builder"
+            className="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors px-2 py-1 rounded-lg whitespace-nowrap"
+          >
+            Qualifications
+          </Link>
+          <Link
+            to="/verification"
+            className="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors px-2 py-1 rounded-lg whitespace-nowrap"
+          >
+            Verify License
+          </Link>
         </div>
-        <div className="flex items-center gap-4">
-          <button 
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <button
             onClick={async () => {
               await logout();
               navigate('/');
             }}
-            className="p-2 rounded-full hover:bg-surface-container transition-colors text-sm font-bold text-error"
+            className="px-3 py-1.5 rounded-lg hover:bg-surface-container transition-colors text-xs font-semibold text-on-surface-variant hover:text-error"
           >
             Logout
           </button>
-          <button className="p-2 rounded-full hover:bg-surface-container transition-colors">
-            <span className="material-symbols-outlined text-[#0077B6]">notifications</span>
-          </button>
-          <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary/10">
-            <img alt="User avatar" className="w-full h-full object-cover" src={profile?.photoURL || "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"} />
+          <div className="w-9 h-9 rounded-full overflow-hidden border border-outline-variant">
+            <img
+              alt="User avatar"
+              className="w-full h-full object-cover"
+              src={profile?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'}
+            />
           </div>
         </div>
       </header>
@@ -92,17 +210,40 @@ export default function Dashboard() {
         {/* Hero Welcome & Availability */}
         <section className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
           <div>
-            <p className="text-primary font-semibold tracking-wider text-sm mb-2 uppercase">Precision Hospitality</p>
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-2 font-headline">Welcome back, {profile?.displayName || 'Dr.'}</h1>
-            <p className="text-on-surface-variant text-lg max-w-lg leading-relaxed">Your clinical workspace is ready. You have 0 active consultations scheduled for today.</p>
+            <p className="text-[#2563EB] dark:text-blue-400 font-semibold tracking-wider text-xs mb-2 uppercase">
+              Clinical Overview
+            </p>
+            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-2 font-headline">
+              Welcome back, {profile?.displayName || 'Dr.'}
+            </h1>
+            <p className="text-on-surface-variant text-base md:text-lg max-w-lg leading-relaxed">
+              Your clinical workspace is ready. You have{' '}
+              <span className="font-semibold text-on-surface tabular-nums">{activeConsults.length}</span> active{' '}
+              {activeConsults.length === 1 ? 'consultation' : 'consultations'} in the teledentistry queue.
+            </p>
           </div>
-          <div className="bg-surface-container-low p-4 rounded-xl flex items-center gap-4 shadow-sm">
+          <div className="bg-surface-container-lowest border border-outline-variant p-4 rounded-2xl flex items-center gap-4">
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Status</span>
-              <span className="font-semibold text-on-surface">Available for Gigs</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">
+                Availability
+              </span>
+              <span className="font-semibold text-sm text-on-surface">
+                {isAvailable ? 'Available for Gigs' : 'Availability Paused'}
+              </span>
             </div>
-            <button className="relative inline-flex h-7 w-12 items-center rounded-full bg-primary-container">
-              <span className="translate-x-6 inline-block h-5 w-5 transform rounded-full bg-white transition shadow-sm"></span>
+            <button
+              type="button"
+              onClick={handleToggleAvailability}
+              aria-label="Toggle gig availability"
+              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                isAvailable ? 'bg-[#2563EB]' : 'bg-surface-container-high'
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition shadow-xs ${
+                  isAvailable ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
             </button>
           </div>
         </section>
@@ -110,56 +251,93 @@ export default function Dashboard() {
         {/* Bento Grid Stats & Earnings */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {/* Earnings Card */}
-          <div className="md:col-span-2 bg-gradient-to-br from-primary to-primary-container rounded-xl p-8 text-white relative overflow-hidden shadow-lg">
+          <div className="md:col-span-2 bg-[#111111] dark:bg-surface-container-lowest rounded-2xl p-8 text-white relative overflow-hidden border border-[#27272A]">
             <div className="relative z-10">
-              <div className="flex justify-between items-start mb-12">
+              <div className="flex justify-between items-start mb-10 gap-4">
                 <div>
-                  <p className="text-primary-fixed/80 font-medium mb-1">Total Earnings This Month</p>
-                  <h2 className="text-5xl font-extrabold tracking-tighter font-headline">$0.00</h2>
+                  <p className="text-neutral-400 text-sm font-medium mb-1">Available Wallet Balance</p>
+                  <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight font-headline tabular-nums">
+                    {statsLoading ? '...' : `$${balance.toFixed(2)}`}
+                  </h2>
                 </div>
-                <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold">0% vs last month</span>
+                <span className="text-xs font-semibold text-blue-300 tabular-nums">
+                  {appliedCount} Applied {appliedCount === 1 ? 'Gig' : 'Gigs'}
+                </span>
               </div>
-              <div className="flex gap-8">
+              <div className="flex flex-wrap gap-8 items-center">
                 <div>
-                  <p className="text-primary-fixed/60 text-xs font-bold uppercase tracking-widest mb-1">Completed Gigs</p>
-                  <p className="text-2xl font-bold font-headline">0</p>
+                  <p className="text-neutral-400 text-xs font-semibold uppercase tracking-wider mb-1">
+                    Completed Consults
+                  </p>
+                  <p className="text-2xl font-bold font-headline tabular-nums">{completedConsults}</p>
                 </div>
                 <div>
-                  <p className="text-primary-fixed/60 text-xs font-bold uppercase tracking-widest mb-1">Hours Logged</p>
-                  <p className="text-2xl font-bold font-headline">0h</p>
+                  <p className="text-neutral-400 text-xs font-semibold uppercase tracking-wider mb-1">
+                    Queue Pending
+                  </p>
+                  <p className="text-2xl font-bold font-headline tabular-nums">{activeConsults.length}</p>
                 </div>
                 <div className="ml-auto">
-                  <Link to="/wallet" className="bg-white text-primary px-6 py-3 rounded-xl font-bold text-sm tracking-wide hover:bg-surface-container-low transition-all inline-block">WITHDRAW FUNDS</Link>
+                  <Link
+                    to="/wallet"
+                    className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-6 py-3 rounded-xl font-semibold text-sm transition-colors inline-block"
+                  >
+                    Withdraw Funds
+                  </Link>
                 </div>
               </div>
-            </div>
-            <div className="absolute top-0 right-0 opacity-10 pointer-events-none transform translate-x-1/4 -translate-y-1/4">
-              <span className="material-symbols-outlined text-[300px]">clinical_notes</span>
             </div>
           </div>
 
           {/* Profile Completion Card */}
-          <div className="bg-surface-container-lowest rounded-xl p-8 shadow-sm flex flex-col border border-outline-variant/10">
+          <div className="bg-surface-container-lowest rounded-2xl p-8 flex flex-col border border-outline-variant">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-lg font-headline">Verification</h3>
-              <span className={`material-symbols-outlined ${profile?.onboardingComplete ? 'text-teal-600' : 'text-tertiary'}`} style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+              <h3 className="font-bold text-lg font-headline text-on-surface">Verification</h3>
+              <span
+                className={`material-symbols-outlined ${
+                  profile?.onboardingComplete
+                    ? 'text-[#2563EB] dark:text-blue-400'
+                    : 'text-amber-600 dark:text-amber-400'
+                }`}
+                style={{ fontVariationSettings: "'FILL' 1" }}
+              >
+                verified
+              </span>
             </div>
             <div className="mb-auto">
               <div className="w-full bg-surface-container rounded-full h-2 mb-4">
-                <div className={`${profile?.onboardingComplete ? 'bg-teal-600 w-full' : 'bg-tertiary-container w-[40%]'} h-2 rounded-full`}></div>
+                <div
+                  className={`${
+                    profile?.onboardingComplete
+                      ? 'bg-[#2563EB] w-full'
+                      : 'bg-amber-500 w-[40%]'
+                  } h-2 rounded-full transition-all`}
+                />
               </div>
               {profile?.onboardingComplete ? (
-                <p className="text-sm text-on-surface-variant leading-relaxed">Your credentials are <span className="font-bold text-teal-600">100% Verified</span>. Clinical Pro unlocked.</p>
+                <p className="text-sm text-on-surface-variant leading-relaxed">
+                  Your credentials are{' '}
+                  <span className="font-semibold text-[#2563EB] dark:text-blue-400">100% Verified</span>. Clinical Pro unlocked.
+                </p>
               ) : (
-                <p className="text-sm text-on-surface-variant leading-relaxed">Your clinical credentials are <span className="font-bold text-on-surface">40% complete</span>. Add your license to unlock gigs.</p>
+                <p className="text-sm text-on-surface-variant leading-relaxed">
+                  Your clinical credentials are{' '}
+                  <span className="font-semibold text-on-surface">40% complete</span>. Add your license to unlock gigs.
+                </p>
               )}
             </div>
-            <div className="mt-6 flex flex-col gap-2">
-              <Link to="/profile-builder" className="w-full py-2.5 bg-[#0077B6] text-white rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-[#0077B6]/90 transition-colors text-center block shadow-xs">
-                {profile?.profileCompleted ? 'EDIT QUALIFICATIONS' : 'BUILD QUALIFICATIONS'}
+            <div className="mt-6 flex flex-col gap-2.5">
+              <Link
+                to="/profile-builder"
+                className="w-full py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors text-center block"
+              >
+                {profile?.profileCompleted ? 'Edit Qualifications' : 'Build Qualifications'}
               </Link>
-              <Link to="/verification" className="w-full py-2.5 outline outline-outline-variant/30 rounded-xl text-primary font-bold text-xs uppercase tracking-wider hover:bg-surface-container transition-colors text-center block">
-                {profile?.onboardingComplete ? 'VIEW LICENSE' : 'VERIFY LICENSE'}
+              <Link
+                to="/verification"
+                className="w-full py-2.5 border border-outline-variant rounded-xl text-on-surface font-semibold text-xs uppercase tracking-wider hover:bg-surface-container transition-colors text-center block"
+              >
+                {profile?.onboardingComplete ? 'View License' : 'Verify License'}
               </Link>
             </div>
           </div>
@@ -167,94 +345,175 @@ export default function Dashboard() {
 
         {/* Dashboard Main Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          {/* Active Gigs */}
+          {/* Active Teledentistry Queue */}
           <div className="lg:col-span-7">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold tracking-tight font-headline">Active Gigs</h2>
-              <Link to="/opportunities" className="text-primary font-semibold text-sm hover:underline">View All Schedule</Link>
+              <h2 className="text-2xl font-bold tracking-tight font-headline text-on-surface">
+                Active Teledentistry Queue
+              </h2>
+              <Link
+                to="/consultations"
+                className="text-[#2563EB] dark:text-blue-400 font-semibold text-sm hover:underline"
+              >
+                Open Consultations Hub
+              </Link>
             </div>
-            <div className="space-y-4">
-              <div className="bg-surface-container-lowest p-8 text-center rounded-xl shadow-sm border border-dashed border-outline-variant">
-                <span className="material-symbols-outlined text-4xl text-outline mb-2">event_busy</span>
-                <h4 className="font-bold text-lg mb-1 font-headline">No Active Gigs</h4>
-                <p className="text-on-surface-variant text-sm">You don't have any active gigs scheduled for today.</p>
-              </div>
+            <div className="space-y-3">
+              {activeConsults.length > 0 ? (
+                activeConsults.slice(0, 3).map((c) => (
+                  <div
+                    key={c.id}
+                    onClick={() => navigate('/consultations')}
+                    className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant hover:border-[#2563EB]/60 transition-colors cursor-pointer flex items-center justify-between gap-4"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2.5 mb-1">
+                        <h4 className="font-bold text-base font-headline text-on-surface">
+                          {c.patientName}
+                        </h4>
+                        <span
+                          className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${
+                            c.urgency === 'Emergency'
+                              ? 'bg-red-500/15 text-red-600 dark:text-red-400'
+                              : c.urgency === 'Urgent'
+                              ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+                              : 'bg-surface-container text-on-surface-variant'
+                          }`}
+                        >
+                          {c.urgency}
+                        </span>
+                      </div>
+                      <p className="text-xs text-on-surface-variant">
+                        {c.caseType} · {c.status}
+                      </p>
+                    </div>
+                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums shrink-0">
+                      +${c.fee}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="bg-surface-container-lowest p-8 text-center rounded-2xl border border-dashed border-outline-variant">
+                  <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-2">
+                    event_busy
+                  </span>
+                  <h4 className="font-bold text-lg mb-1 font-headline text-on-surface">
+                    No Pending Consultations
+                  </h4>
+                  <p className="text-on-surface-variant text-sm">
+                    Browse the Opportunity Engine to pick up new remote clinical work.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Recommended Opportunities & AI Matchmaker */}
           <div className="lg:col-span-5">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold tracking-tight font-headline">AI Matchmaker</h2>
-              <button className="p-2 rounded-full hover:bg-surface-container">
-                <span className="material-symbols-outlined text-outline">filter_list</span>
+              <h2 className="text-2xl font-bold tracking-tight font-headline text-on-surface">
+                AI Matchmaker
+              </h2>
+              <button
+                onClick={handleAIMatch}
+                disabled={isMatching}
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-60 text-white px-4 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2"
+              >
+                {isMatching ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
+                {isMatching ? 'Matching...' : 'Find Best Gigs'}
               </button>
             </div>
-            <div className="bg-surface-container-low rounded-2xl p-4 space-y-4">
-              
-              <div className="flex items-center gap-2 bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/20">
-                <span className="material-symbols-outlined text-outline ml-2">key</span>
-                <input 
-                  type="password" 
-                  placeholder="Enter Gemini API Key" 
-                  value={apiKey}
-                  onChange={(e) => handleApiKeyChange(e.target.value)}
-                  className="bg-transparent border-none text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0 flex-1"
-                />
-                <button 
-                  onClick={handleAIMatch}
-                  disabled={isMatching || !apiKey}
-                  className="bg-primary hover:bg-primary/90 disabled:bg-surface-container-highest disabled:text-on-surface-variant text-on-primary px-3 py-1.5 rounded-md text-sm font-bold transition-colors flex items-center gap-2"
-                >
-                  {isMatching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Find Gigs'}
-                </button>
-              </div>
-
-              {matches.length > 0 ? (
-                matches.map((match, idx) => (
-                  <div key={idx} className="bg-surface-container-lowest p-5 rounded-xl border border-transparent hover:border-primary/20 transition-all cursor-pointer">
-                    <div className="flex items-start justify-between mb-3">
-                      <h5 className="font-bold font-headline">{match.title}</h5>
-                      <span className="text-primary font-bold text-sm">{match.rate}</span>
-                    </div>
-                    <p className="text-on-surface-variant text-xs mb-4 line-clamp-2">{match.company} • {match.match} Match</p>
-                    <div className="flex flex-wrap gap-2">
-                      {match.tags.map((tag: string, i: number) => (
-                        <span key={i} className="bg-secondary-container/40 text-on-secondary-container px-2 py-1 rounded text-[10px] font-bold uppercase">{tag}</span>
-                      ))}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <span className="material-symbols-outlined text-3xl text-outline mb-2">auto_awesome</span>
-                  <p className="text-sm text-on-surface-variant">Enter your API key to get personalized gig recommendations.</p>
+            <div className="bg-surface-container-low border border-outline-variant rounded-2xl p-4 space-y-3">
+              {matchError && (
+                <div className="bg-error-container border border-error/30 text-error p-3 rounded-xl text-xs flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{matchError}</span>
                 </div>
               )}
 
-              <Link to="/opportunities" className="block text-center w-full py-4 text-primary font-bold text-sm tracking-widest uppercase hover:bg-surface-container-high transition-colors rounded-xl">EXPLORE ALL GIGS</Link>
+              {matches.length > 0 ? (
+                matches.map((match, idx) => (
+                  <div
+                    key={match.gigId || idx}
+                    onClick={() => navigate('/opportunities')}
+                    className="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant hover:border-[#2563EB]/60 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-1.5">
+                      <h5 className="font-bold font-headline text-on-surface">{match.title}</h5>
+                      <span className="text-[#2563EB] dark:text-blue-400 font-bold text-sm tabular-nums shrink-0">
+                        {match.rate}
+                      </span>
+                    </div>
+                    <p className="text-on-surface-variant text-xs mb-2">
+                      {match.company} · {match.match} Match
+                    </p>
+                    {match.rationale && (
+                      <p className="text-xs text-on-surface-variant mb-2.5 line-clamp-2">
+                        {match.rationale}
+                      </p>
+                    )}
+                    {match.tags && match.tags.length > 0 && (
+                      <p className="text-[11px] font-medium text-on-surface-variant">
+                        {match.tags.join(' · ')}
+                      </p>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 px-4">
+                  <span className="material-symbols-outlined text-3xl text-on-surface-variant mb-2">
+                    auto_awesome
+                  </span>
+                  <p className="text-sm text-on-surface-variant">
+                    Click <strong className="text-on-surface">Find Best Gigs</strong> to analyze your dental credentials with Gemini AI and rank top remote roles.
+                  </p>
+                </div>
+              )}
+
+              <Link
+                to="/opportunities"
+                className="block text-center w-full py-3.5 text-[#2563EB] dark:text-blue-400 font-semibold text-xs tracking-wider uppercase hover:bg-surface-container transition-colors rounded-xl"
+              >
+                Explore All Gigs
+              </Link>
             </div>
           </div>
         </div>
       </main>
 
       {/* BottomNavBar (Mobile) */}
-      <nav className="md:hidden fixed bottom-0 w-full z-50 rounded-t-3xl bg-white/80 backdrop-blur-xl border-t border-slate-100/10 shadow-[0px_-12px_32px_rgba(25,28,30,0.06)] flex justify-around items-center px-4 h-20 pb-safe">
-        <Link to="/dashboard" className="flex flex-col items-center justify-center bg-[#0077B6]/10 text-[#0077B6] rounded-xl px-3 py-1">
-          <span className="material-symbols-outlined">dashboard</span>
-          <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Dashboard</span>
+      <nav className="md:hidden fixed bottom-0 w-full z-50 bg-background/90 backdrop-blur-xl border-t border-outline-variant flex justify-around items-center px-4 h-16">
+        <Link
+          to="/dashboard"
+          className="flex flex-col items-center justify-center text-[#2563EB] dark:text-blue-400"
+        >
+          <span className="material-symbols-outlined text-xl">dashboard</span>
+          <span className="text-[10px] font-semibold mt-0.5">Dashboard</span>
         </Link>
-        <Link to="/opportunities" className="flex flex-col items-center justify-center text-slate-400 hover:text-[#0077B6] transition-all">
-          <span className="material-symbols-outlined">work_outline</span>
-          <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Gigs</span>
+        <Link
+          to="/opportunities"
+          className="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors"
+        >
+          <span className="material-symbols-outlined text-xl">work_outline</span>
+          <span className="text-[10px] font-medium mt-0.5">Gigs</span>
         </Link>
-        <Link to="/consultations" className="flex flex-col items-center justify-center text-slate-400 hover:text-[#0077B6] transition-all">
-          <span className="material-symbols-outlined">medical_services</span>
-          <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Consults</span>
+        <Link
+          to="/consultations"
+          className="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors"
+        >
+          <span className="material-symbols-outlined text-xl">medical_services</span>
+          <span className="text-[10px] font-medium mt-0.5">Consults</span>
         </Link>
-        <Link to="/wallet" className="flex flex-col items-center justify-center text-slate-400 hover:text-[#0077B6] transition-all">
-          <span className="material-symbols-outlined">account_balance_wallet</span>
-          <span className="font-inter text-[11px] font-semibold tracking-wide uppercase mt-1">Wallet</span>
+        <Link
+          to="/wallet"
+          className="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors"
+        >
+          <span className="material-symbols-outlined text-xl">account_balance_wallet</span>
+          <span className="text-[10px] font-medium mt-0.5">Wallet</span>
         </Link>
       </nav>
     </div>

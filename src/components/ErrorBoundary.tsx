@@ -10,11 +10,10 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  // Explicitly declare props for TypeScript type-safety under any custom environment settings
   public readonly props!: Props;
 
   public state: State = {
-    hasError: false
+    hasError: false,
   };
 
   public static getDerivedStateFromError(error: Error): State {
@@ -28,16 +27,20 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-          <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-lg border border-slate-200">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight font-headline">Something went wrong</h2>
-            <p className="text-slate-600 mb-6 font-body">An unexpected error occurred. Our team has been notified. Please try refreshing the page.</p>
-            <div className="bg-slate-100 p-4 rounded-lg text-xs font-mono text-slate-800 break-words mb-6 overflow-auto max-h-40">
+        <div className="min-h-screen flex items-center justify-center bg-background text-on-surface p-4 font-body">
+          <div className="max-w-md w-full bg-surface-container-lowest p-8 rounded-2xl border border-outline-variant">
+            <h2 className="text-2xl font-bold text-on-surface mb-3 tracking-tight font-headline">
+              Something went wrong
+            </h2>
+            <p className="text-sm text-on-surface-variant mb-6 leading-relaxed">
+              An unexpected error occurred. Please refresh the page to restore your session.
+            </p>
+            <div className="bg-surface-container p-4 rounded-xl border border-outline-variant text-xs font-mono text-on-surface break-words mb-6 overflow-auto max-h-40">
               {this.state.error?.message}
             </div>
             <button
               onClick={() => window.location.reload()}
-              className="w-full bg-[#0077B6] hover:bg-[#023E8A] text-white py-3 rounded-lg font-bold tracking-wider uppercase transition-colors"
+              className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white py-3 px-5 rounded-xl text-sm font-semibold transition-colors"
             >
               Refresh Page
             </button>
